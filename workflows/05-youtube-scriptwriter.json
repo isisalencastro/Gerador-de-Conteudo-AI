@@ -4,7 +4,7 @@
     {
       "parameters": {
         "path": "youtube-script",
-        "responseMode": "lastNode",
+        "responseMode": "responseNode",
         "options": {}
       },
       "id": "webhook-yt-script",
@@ -21,9 +21,14 @@
       "parameters": {
         "resource": "databasePage",
         "operation": "getAll",
-        "databaseId": "={{ $env.NOTION_YOUTUBE_DB_ID }}",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.NOTION_YOUTUBE_DB_ID }}"
+        },
         "returnAll": false,
         "limit": 10,
+        "simple": true,
         "filterType": "manual",
         "matchType": "allFilters",
         "filters": {
@@ -141,7 +146,12 @@
       "parameters": {
         "resource": "databasePage",
         "operation": "update",
-        "pageId": "={{ $json.ideaPageId }}",
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.ideaPageId }}"
+        },
+        "simple": true,
         "propertiesUi": {
           "propertyValues": [
             {

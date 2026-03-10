@@ -1385,7 +1385,7 @@ function buildYouTubeScriptwriter() {
     {
       parameters: {
         path: "youtube-script",
-        responseMode: "lastNode",
+        responseMode: "responseNode",
         options: {}
       },
       id: "webhook-yt-script",
@@ -1399,9 +1399,10 @@ function buildYouTubeScriptwriter() {
       parameters: {
         resource: "databasePage",
         operation: "getAll",
-        databaseId: "={{ $env.NOTION_YOUTUBE_DB_ID }}",
+        databaseId: { "__rl": true, "mode": "id", "value": "={{ $env.NOTION_YOUTUBE_DB_ID }}" },
         returnAll: false,
         limit: 10,
+        simple: true,
         filterType: "manual",
         matchType: "allFilters",
         filters: {
@@ -1681,7 +1682,8 @@ return [{
       parameters: {
         resource: "databasePage",
         operation: "update",
-        pageId: "={{ $json.ideaPageId }}",
+        pageId: { "__rl": true, "mode": "id", "value": "={{ $json.ideaPageId }}" },
+        simple: true,
         propertiesUi: {
           propertyValues: [
             { key: "Status|select", selectValue: "Roteirizada" },

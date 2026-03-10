@@ -574,7 +574,7 @@ function buildInstagramContent() {
         returnAll: false,
         limit: 1,
         sort: {
-          sortValues: [{ key: "created_time", value: "descending" }]
+          sortValue: [{ key: "created_time", direction: "descending", timestamp: true }]
         },
         options: {}
       },
@@ -839,7 +839,7 @@ function buildLinkedInContent() {
         returnAll: false,
         limit: 1,
         sort: {
-          sortValues: [{ key: "created_time", value: "descending" }]
+          sortValue: [{ key: "created_time", direction: "descending", timestamp: true }]
         },
         options: {}
       },
@@ -1379,76 +1379,36 @@ return ideas.map((idea, index) => ({
 
 // ============================================================
 // WORKFLOW 5: YOUTUBE SCRIPTWRITER (Trigger Manual / Webhook)
+// Refactored: Notion nodes replaced by HTTP Request + Code
+// to avoid fixedCollection parameter compatibility issues
 // ============================================================
 function buildYouTubeScriptwriter() {
-  const nodes = [
-    {
-      parameters: {
-        path: "youtube-script",
-        responseMode: "lastNode",
-        options: {}
+  const notionQueryCode = `
+const dbId = $env.NOTION_YOUTUBE_DB_ID;
+return [{
+  json: {
+    notionDbId: dbId,
+    requestBody: {
+      filter: {
+        property: "Status",
+        select: { equals: "Aprovada" }
       },
-      id: "webhook-yt-script",
-      name: "Webhook: Roteirizar Vídeo",
-      type: "n8n-nodes-base.webhook",
-      typeVersion: 2,
-      position: [250, 300],
-      webhookId: "youtube-script-webhook"
-    },
-    {
-      parameters: {
-        resource: "databasePage",
-        operation: "getAll",
-        databaseId: "={{ $env.NOTION_YOUTUBE_DB_ID }}",
-        returnAll: false,
-        limit: 10,
-        filterType: "manual",
-        filters: {
-          conditions: [
-            {
-              key: "Status|select",
-              condition: "equal",
-              selectValue: "Aprovada"
-            }
-          ],
-          combinator: "and"
-        },
-        sort: {
-          sortValues: [{ key: "created_time", value: "descending" }]
-        },
-        options: {}
-      },
-      id: "notion-get-approved",
-      name: "Notion: Ideias Aprovadas",
-      type: "n8n-nodes-base.notion",
-      typeVersion: 2.2,
-      position: [500, 300],
-      credentials: {
-        notionApi: { id: "notion-cred", name: "Notion" }
-      }
-    },
-    {
-      parameters: {
-        conditions: {
-          boolean: [],
-          number: [
-            {
-              value1: "={{ $input.all().length }}",
-              operation: "largerEqual",
-              value2: 1
-            }
-          ]
-        }
-      },
-      id: "if-has-ideas",
-      name: "Tem Ideias Aprovadas?",
-      type: "n8n-nodes-base.if",
-      typeVersion: 1,
-      position: [750, 300]
-    },
-    {
-      parameters: {
-        jsCode: `
+      sorts: [{ timestamp: "created_time", direction: "descending" }],
+      page_size: 10
+    }
+  }
+}];
+`.trim();
+
+  const checkResultsCode = `
+const results = items[0].json.results || [];
+if (results.length === 0) {
+  return [];
+}
+return results.map(page => ({ json: page }));
+`.trim();
+
+  const preparePromptCode = `
 const idea = items[0].json;
 const props = idea.properties || {};
 const title = props.Name?.title?.[0]?.plain_text || 'Ideia de vídeo';
@@ -1574,37 +1534,9 @@ return [{
     }
   }
 }];
-`.trim()
-      },
-      id: "code-prepare-script",
-      name: "Preparar Prompt: Roteiro",
-      type: "n8n-nodes-base.code",
-      typeVersion: 2,
-      position: [1000, 300]
-    },
-    {
-      parameters: {
-        method: "POST",
-        url: "https://api.openai.com/v1/chat/completions",
-        authentication: "predefinedCredentialType",
-        nodeCredentialType: "openAiApi",
-        sendBody: true,
-        specifyBody: "json",
-        jsonBody: "={{ JSON.stringify($json.requestBody) }}",
-        options: { timeout: 180000 }
-      },
-      id: "openai-script",
-      name: "OpenAI: Gerar Roteiro",
-      type: "n8n-nodes-base.httpRequest",
-      typeVersion: 4.2,
-      position: [1250, 300],
-      credentials: {
-        openAiApi: { id: "openai-cred", name: "OpenAI" }
-      }
-    },
-    {
-      parameters: {
-        jsCode: `
+`.trim();
+
+  const formatScriptCode = `
 const response = items[0].json;
 const content = response.choices[0].message.content;
 let scriptData;
@@ -1619,11 +1551,11 @@ const script = scriptData.script || {};
 const today = new Date().toISOString().split('T')[0];
 
 let fullScript = '# ROTEIRO\\n\\n';
-fullScript += '## 🎬 GANCHO (0:00-0:30)\\n' + (script.hook || '') + '\\n\\n';
-fullScript += '## 📢 INTRO (0:30-1:30)\\n' + (script.intro || '') + '\\n\\n';
+fullScript += '## GANCHO (0:00-0:30)\\n' + (script.hook || '') + '\\n\\n';
+fullScript += '## INTRO (0:30-1:30)\\n' + (script.intro || '') + '\\n\\n';
 
 if (script.development) {
-  fullScript += '## 📝 DESENVOLVIMENTO\\n\\n';
+  fullScript += '## DESENVOLVIMENTO\\n\\n';
   script.development.forEach((block, i) => {
     fullScript += '### Bloco ' + (i + 1) + ': ' + block.block_title + '\\n';
     fullScript += block.content + '\\n';
@@ -1634,9 +1566,9 @@ if (script.development) {
   });
 }
 
-fullScript += '## 💡 CLÍMAX\\n' + (script.climax || '') + '\\n\\n';
-fullScript += '## 📣 CTA\\n' + (script.cta || '') + '\\n\\n';
-fullScript += '## 👋 ENCERRAMENTO\\n' + (script.closing || '') + '\\n\\n';
+fullScript += '## CLÍMAX\\n' + (script.climax || '') + '\\n\\n';
+fullScript += '## CTA\\n' + (script.cta || '') + '\\n\\n';
+fullScript += '## ENCERRAMENTO\\n' + (script.closing || '') + '\\n\\n';
 
 fullScript += '---\\n\\n## OPÇÕES DE TÍTULO\\n';
 (scriptData.title_options || []).forEach((t, i) => {
@@ -1654,58 +1586,161 @@ fullScript += '\\n\\n## DESCRIÇÃO DO VÍDEO\\n' + (scriptData.video_descriptio
 const ideaTitle = $('Preparar Prompt: Roteiro').item.json.ideaTitle;
 const ideaPageId = $('Preparar Prompt: Roteiro').item.json.ideaPageId;
 
+const notionBody = {
+  properties: {
+    "Status": { select: { name: "Roteirizada" } },
+    "Opções de Título": { rich_text: [{ text: { content: (scriptData.title_options || []).join(' | ') } }] },
+    "Tags YouTube": { rich_text: [{ text: { content: (scriptData.youtube_tags || []).join(', ') } }] },
+    "Duração Estimada": { rich_text: [{ text: { content: scriptData.estimated_duration || '' } }] }
+  },
+  children: [
+    {
+      object: "block",
+      type: "paragraph",
+      paragraph: {
+        rich_text: [{ type: "text", text: { content: fullScript.substring(0, 2000) } }]
+      }
+    }
+  ]
+};
+
 return [{
   json: {
-    ideaTitle: ideaTitle,
-    ideaPageId: ideaPageId,
-    fullScript: fullScript,
+    ideaTitle,
+    ideaPageId,
+    fullScript,
+    notionBody,
     titleOptions: (scriptData.title_options || []).join(' | '),
-    thumbnailSuggestions: JSON.stringify(scriptData.thumbnail_suggestions || []),
     youtubeTags: (scriptData.youtube_tags || []).join(', '),
-    videoDescription: scriptData.video_description || '',
     estimatedDuration: scriptData.estimated_duration || '',
     date: today,
-    scriptData: scriptData,
     status: 'Roteirizada'
   }
 }];
-`.trim()
+`.trim();
+
+  const nodes = [
+    {
+      parameters: {
+        path: "youtube-script",
+        responseMode: "responseNode",
+        options: {}
+      },
+      id: "webhook-yt-script",
+      name: "Webhook: Roteirizar Vídeo",
+      type: "n8n-nodes-base.webhook",
+      typeVersion: 2,
+      position: [250, 300],
+      webhookId: "youtube-script-webhook"
+    },
+    {
+      parameters: {
+        jsCode: notionQueryCode
+      },
+      id: "code-build-query",
+      name: "Preparar Query Notion",
+      type: "n8n-nodes-base.code",
+      typeVersion: 2,
+      position: [500, 300]
+    },
+    {
+      parameters: {
+        method: "POST",
+        url: "=https://api.notion.com/v1/databases/{{ $json.notionDbId }}/query",
+        authentication: "predefinedCredentialType",
+        nodeCredentialType: "notionApi",
+        sendHeaders: true,
+        headerParameters: {
+          parameters: [
+            { name: "Notion-Version", value: "2022-06-28" }
+          ]
+        },
+        sendBody: true,
+        specifyBody: "json",
+        jsonBody: "={{ JSON.stringify($json.requestBody) }}",
+        options: {}
+      },
+      id: "http-notion-query",
+      name: "Notion: Buscar Aprovadas",
+      type: "n8n-nodes-base.httpRequest",
+      typeVersion: 4.2,
+      position: [750, 300],
+      credentials: {
+        notionApi: { id: "notion-cred", name: "Notion" }
+      }
+    },
+    {
+      parameters: {
+        jsCode: checkResultsCode
+      },
+      id: "code-check-results",
+      name: "Tem Ideias Aprovadas?",
+      type: "n8n-nodes-base.code",
+      typeVersion: 2,
+      position: [1000, 300]
+    },
+    {
+      parameters: {
+        jsCode: preparePromptCode
+      },
+      id: "code-prepare-script",
+      name: "Preparar Prompt: Roteiro",
+      type: "n8n-nodes-base.code",
+      typeVersion: 2,
+      position: [1250, 300]
+    },
+    {
+      parameters: {
+        method: "POST",
+        url: "https://api.openai.com/v1/chat/completions",
+        authentication: "predefinedCredentialType",
+        nodeCredentialType: "openAiApi",
+        sendBody: true,
+        specifyBody: "json",
+        jsonBody: "={{ JSON.stringify($json.requestBody) }}",
+        options: {}
+      },
+      id: "openai-script",
+      name: "OpenAI: Gerar Roteiro",
+      type: "n8n-nodes-base.httpRequest",
+      typeVersion: 4.2,
+      position: [1500, 300],
+      credentials: {
+        openAiApi: { id: "openai-cred", name: "OpenAI" }
+      }
+    },
+    {
+      parameters: {
+        jsCode: formatScriptCode
       },
       id: "code-format-script",
       name: "Formatar Roteiro",
       type: "n8n-nodes-base.code",
       typeVersion: 2,
-      position: [1500, 300]
+      position: [1750, 300]
     },
     {
       parameters: {
-        resource: "databasePage",
-        operation: "update",
-        pageId: "={{ $json.ideaPageId }}",
-        propertiesUi: {
-          propertyValues: [
-            { key: "Status|select", selectValue: "Roteirizada" },
-            { key: "Opções de Título|rich_text", textContent: "={{ $json.titleOptions }}" },
-            { key: "Tags YouTube|rich_text", textContent: "={{ $json.youtubeTags }}" },
-            { key: "Duração Estimada|rich_text", textContent: "={{ $json.estimatedDuration }}" }
+        method: "PATCH",
+        url: "=https://api.notion.com/v1/pages/{{ $json.ideaPageId }}",
+        authentication: "predefinedCredentialType",
+        nodeCredentialType: "notionApi",
+        sendHeaders: true,
+        headerParameters: {
+          parameters: [
+            { name: "Notion-Version", value: "2022-06-28" }
           ]
         },
-        blockUi: {
-          blockValues: [
-            {
-              type: "paragraph",
-              richText: false,
-              textContent: "={{ $json.fullScript }}"
-            }
-          ]
-        },
+        sendBody: true,
+        specifyBody: "json",
+        jsonBody: "={{ JSON.stringify($json.notionBody) }}",
         options: {}
       },
-      id: "notion-update-yt",
+      id: "http-notion-update",
       name: "Notion: Atualizar com Roteiro",
-      type: "n8n-nodes-base.notion",
-      typeVersion: 2.2,
-      position: [1750, 300],
+      type: "n8n-nodes-base.httpRequest",
+      typeVersion: 4.2,
+      position: [2000, 300],
       credentials: {
         notionApi: { id: "notion-cred", name: "Notion" }
       }
@@ -1713,41 +1748,39 @@ return [{
     {
       parameters: {
         respondWith: "json",
-        responseBody: "={{ JSON.stringify({ success: true, message: 'Roteiro gerado com sucesso para: ' + $json.ideaTitle }) }}",
-        options: {}
+        responseBody: "={{ JSON.stringify({ success: true, message: 'Roteiro gerado com sucesso para: ' + $('Formatar Roteiro').item.json.ideaTitle }) }}"
       },
       id: "respond-webhook",
       name: "Resposta: Sucesso",
       type: "n8n-nodes-base.respondToWebhook",
       typeVersion: 1.1,
-      position: [2000, 300]
+      position: [2250, 300]
     },
     {
       parameters: {
         respondWith: "json",
-        responseBody: "={{ JSON.stringify({ success: false, message: 'Nenhuma ideia com status Aprovada encontrada no Notion' }) }}",
-        options: {}
+        responseBody: "={{ JSON.stringify({ success: false, message: 'Nenhuma ideia com status Aprovada encontrada no Notion' }) }}"
       },
       id: "respond-no-ideas",
       name: "Resposta: Sem Ideias",
       type: "n8n-nodes-base.respondToWebhook",
       typeVersion: 1.1,
-      position: [1000, 500]
+      position: [1250, 500]
     }
   ];
 
   const connections = {
     "Webhook: Roteirizar Vídeo": {
-      main: [[{ node: "Notion: Ideias Aprovadas", type: "main", index: 0 }]]
+      main: [[{ node: "Preparar Query Notion", type: "main", index: 0 }]]
     },
-    "Notion: Ideias Aprovadas": {
+    "Preparar Query Notion": {
+      main: [[{ node: "Notion: Buscar Aprovadas", type: "main", index: 0 }]]
+    },
+    "Notion: Buscar Aprovadas": {
       main: [[{ node: "Tem Ideias Aprovadas?", type: "main", index: 0 }]]
     },
     "Tem Ideias Aprovadas?": {
-      main: [
-        [{ node: "Preparar Prompt: Roteiro", type: "main", index: 0 }],
-        [{ node: "Resposta: Sem Ideias", type: "main", index: 0 }]
-      ]
+      main: [[{ node: "Preparar Prompt: Roteiro", type: "main", index: 0 }]]
     },
     "Preparar Prompt: Roteiro": {
       main: [[{ node: "OpenAI: Gerar Roteiro", type: "main", index: 0 }]]

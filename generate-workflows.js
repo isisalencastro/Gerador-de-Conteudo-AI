@@ -1443,7 +1443,7 @@ function buildYouTubeScriptwriter() {
       id: "if-has-ideas",
       name: "Tem Ideias Aprovadas?",
       type: "n8n-nodes-base.if",
-      typeVersion: 2,
+      typeVersion: 1,
       position: [750, 300]
     },
     {

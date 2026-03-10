@@ -64,12 +64,12 @@ Crie um **Full page database** com as seguintes propriedades:
 | Name | Title | (padrão) |
 | Status | Select | Opções: `Ideia` (cinza), `Aprovada` (azul), `Roteirizada` (roxo), `Filmada` (laranja), `Publicada` (verde) |
 | Data | Date | — |
-| Formato | Select | Opções: `tutorial`, `opinião`, `storytelling`, `lista`, `análise` |
+| Formato | Select | Opções: `video-ensaio`, `storytelling`, `reflexão`, `diário-em-vídeo`, `análise-pessoal` |
 | Inspiração | Rich Text | — |
 | Ângulo Isis | Rich Text | — |
 | Público-alvo | Rich Text | — |
 | Duração Estimada | Rich Text | — |
-| Potencial Viral | Select | Opções: `baixo`, `médio`, `alto` |
+| Potencial Viral | Select | Opções: `Baixo`, `Médio`, `Alto` |
 | Keywords | Rich Text | — |
 | Opções de Título | Rich Text | — |
 | Tags YouTube | Rich Text | — |

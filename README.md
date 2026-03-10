@@ -1,4 +1,4 @@
-# Sistema de Conteúdo e Automação — Isis Alencastro & IBACompany
+# Sistema de Conteúdo Automatico
 
 Sistema completo de automação de conteúdo usando **N8N**, **OpenAI (GPT-4o)** e **Notion** como hub central. A IA cuida de pesquisa, estrutura e rascunho — Isis mantém controle criativo e identidade antes de publicar.
 

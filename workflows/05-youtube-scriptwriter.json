@@ -19,44 +19,43 @@
     },
     {
       "parameters": {
-        "resource": "databasePage",
-        "operation": "getAll",
-        "databaseId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "={{ $env.NOTION_YOUTUBE_DB_ID }}"
-        },
-        "returnAll": false,
-        "limit": 10,
-        "simple": true,
-        "filterType": "manual",
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "key": "Status|select",
-              "condition": "equals",
-              "selectValue": "Aprovada"
-            }
-          ]
-        },
-        "sort": {
-          "sortValue": [
-            {
-              "key": "created_time",
-              "direction": "descending",
-              "timestamp": true
-            }
-          ]
-        },
-        "options": {}
+        "jsCode": "const dbId = $env.NOTION_YOUTUBE_DB_ID;\nreturn [{\n  json: {\n    notionDbId: dbId,\n    requestBody: {\n      filter: {\n        property: \"Status\",\n        select: { equals: \"Aprovada\" }\n      },\n      sorts: [{ timestamp: \"created_time\", direction: \"descending\" }],\n      page_size: 10\n    }\n  }\n}];"
       },
-      "id": "notion-get-approved",
-      "name": "Notion: Ideias Aprovadas",
-      "type": "n8n-nodes-base.notion",
-      "typeVersion": 2.2,
+      "id": "code-build-query",
+      "name": "Preparar Query Notion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.notion.com/v1/databases/{{ $json.notionDbId }}/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {}
+      },
+      "id": "http-notion-query",
+      "name": "Notion: Buscar Aprovadas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        750,
         300
       ],
       "credentials": {
@@ -68,23 +67,14 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "boolean": [],
-          "number": [
-            {
-              "value1": "={{ $input.all().length }}",
-              "operation": "largerEqual",
-              "value2": 1
-            }
-          ]
-        }
+        "jsCode": "const results = items[0].json.results || [];\nif (results.length === 0) {\n  return [];\n}\nreturn results.map(page => ({ json: page }));"
       },
-      "id": "if-has-ideas",
+      "id": "code-check-results",
       "name": "Tem Ideias Aprovadas?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        750,
+        1000,
         300
       ]
     },
@@ -97,7 +87,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1000,
+        1250,
         300
       ]
     },
@@ -110,16 +100,14 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
-        "options": {
-          "timeout": 180000
-        }
+        "options": {}
       },
       "id": "openai-script",
       "name": "OpenAI: Gerar Roteiro",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1250,
+        1500,
         300
       ],
       "credentials": {
@@ -131,64 +119,43 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = items[0].json;\nconst content = response.choices[0].message.content;\nlet scriptData;\ntry {\n  scriptData = JSON.parse(content);\n} catch (e) {\n  const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n  scriptData = jsonMatch ? JSON.parse(jsonMatch[0]) : {};\n}\n\nconst script = scriptData.script || {};\nconst today = new Date().toISOString().split('T')[0];\n\nlet fullScript = '# ROTEIRO\\n\\n';\nfullScript += '## 🎬 GANCHO (0:00-0:30)\\n' + (script.hook || '') + '\\n\\n';\nfullScript += '## 📢 INTRO (0:30-1:30)\\n' + (script.intro || '') + '\\n\\n';\n\nif (script.development) {\n  fullScript += '## 📝 DESENVOLVIMENTO\\n\\n';\n  script.development.forEach((block, i) => {\n    fullScript += '### Bloco ' + (i + 1) + ': ' + block.block_title + '\\n';\n    fullScript += block.content + '\\n';\n    if (block.production_notes) {\n      fullScript += '\\n[NOTA DE PRODUÇÃO] ' + block.production_notes + '\\n';\n    }\n    fullScript += '\\n';\n  });\n}\n\nfullScript += '## 💡 CLÍMAX\\n' + (script.climax || '') + '\\n\\n';\nfullScript += '## 📣 CTA\\n' + (script.cta || '') + '\\n\\n';\nfullScript += '## 👋 ENCERRAMENTO\\n' + (script.closing || '') + '\\n\\n';\n\nfullScript += '---\\n\\n## OPÇÕES DE TÍTULO\\n';\n(scriptData.title_options || []).forEach((t, i) => {\n  fullScript += (i + 1) + '. ' + t + '\\n';\n});\n\nfullScript += '\\n## SUGESTÕES DE THUMBNAIL\\n';\n(scriptData.thumbnail_suggestions || []).forEach((t, i) => {\n  fullScript += (i + 1) + '. ' + t.description + ' | Texto: ' + (t.text_overlay || '') + '\\n';\n});\n\nfullScript += '\\n## TAGS\\n' + (scriptData.youtube_tags || []).join(', ');\nfullScript += '\\n\\n## DESCRIÇÃO DO VÍDEO\\n' + (scriptData.video_description || '');\n\nconst ideaTitle = $('Preparar Prompt: Roteiro').item.json.ideaTitle;\nconst ideaPageId = $('Preparar Prompt: Roteiro').item.json.ideaPageId;\n\nreturn [{\n  json: {\n    ideaTitle: ideaTitle,\n    ideaPageId: ideaPageId,\n    fullScript: fullScript,\n    titleOptions: (scriptData.title_options || []).join(' | '),\n    thumbnailSuggestions: JSON.stringify(scriptData.thumbnail_suggestions || []),\n    youtubeTags: (scriptData.youtube_tags || []).join(', '),\n    videoDescription: scriptData.video_description || '',\n    estimatedDuration: scriptData.estimated_duration || '',\n    date: today,\n    scriptData: scriptData,\n    status: 'Roteirizada'\n  }\n}];"
+        "jsCode": "const response = items[0].json;\nconst content = response.choices[0].message.content;\nlet scriptData;\ntry {\n  scriptData = JSON.parse(content);\n} catch (e) {\n  const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n  scriptData = jsonMatch ? JSON.parse(jsonMatch[0]) : {};\n}\n\nconst script = scriptData.script || {};\nconst today = new Date().toISOString().split('T')[0];\n\nlet fullScript = '# ROTEIRO\\n\\n';\nfullScript += '## GANCHO (0:00-0:30)\\n' + (script.hook || '') + '\\n\\n';\nfullScript += '## INTRO (0:30-1:30)\\n' + (script.intro || '') + '\\n\\n';\n\nif (script.development) {\n  fullScript += '## DESENVOLVIMENTO\\n\\n';\n  script.development.forEach((block, i) => {\n    fullScript += '### Bloco ' + (i + 1) + ': ' + block.block_title + '\\n';\n    fullScript += block.content + '\\n';\n    if (block.production_notes) {\n      fullScript += '\\n[NOTA DE PRODUÇÃO] ' + block.production_notes + '\\n';\n    }\n    fullScript += '\\n';\n  });\n}\n\nfullScript += '## CLÍMAX\\n' + (script.climax || '') + '\\n\\n';\nfullScript += '## CTA\\n' + (script.cta || '') + '\\n\\n';\nfullScript += '## ENCERRAMENTO\\n' + (script.closing || '') + '\\n\\n';\n\nfullScript += '---\\n\\n## OPÇÕES DE TÍTULO\\n';\n(scriptData.title_options || []).forEach((t, i) => {\n  fullScript += (i + 1) + '. ' + t + '\\n';\n});\n\nfullScript += '\\n## SUGESTÕES DE THUMBNAIL\\n';\n(scriptData.thumbnail_suggestions || []).forEach((t, i) => {\n  fullScript += (i + 1) + '. ' + t.description + ' | Texto: ' + (t.text_overlay || '') + '\\n';\n});\n\nfullScript += '\\n## TAGS\\n' + (scriptData.youtube_tags || []).join(', ');\nfullScript += '\\n\\n## DESCRIÇÃO DO VÍDEO\\n' + (scriptData.video_description || '');\n\nconst ideaTitle = $('Preparar Prompt: Roteiro').item.json.ideaTitle;\nconst ideaPageId = $('Preparar Prompt: Roteiro').item.json.ideaPageId;\n\nconst notionBody = {\n  properties: {\n    \"Status\": { select: { name: \"Roteirizada\" } },\n    \"Opções de Título\": { rich_text: [{ text: { content: (scriptData.title_options || []).join(' | ') } }] },\n    \"Tags YouTube\": { rich_text: [{ text: { content: (scriptData.youtube_tags || []).join(', ') } }] },\n    \"Duração Estimada\": { rich_text: [{ text: { content: scriptData.estimated_duration || '' } }] }\n  },\n  children: [\n    {\n      object: \"block\",\n      type: \"paragraph\",\n      paragraph: {\n        rich_text: [{ type: \"text\", text: { content: fullScript.substring(0, 2000) } }]\n      }\n    }\n  ]\n};\n\nreturn [{\n  json: {\n    ideaTitle,\n    ideaPageId,\n    fullScript,\n    notionBody,\n    titleOptions: (scriptData.title_options || []).join(' | '),\n    youtubeTags: (scriptData.youtube_tags || []).join(', '),\n    estimatedDuration: scriptData.estimated_duration || '',\n    date: today,\n    status: 'Roteirizada'\n  }\n}];"
       },
       "id": "code-format-script",
       "name": "Formatar Roteiro",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1500,
+        1750,
         300
       ]
     },
     {
       "parameters": {
-        "resource": "databasePage",
-        "operation": "update",
-        "pageId": {
-          "__rl": true,
-          "mode": "id",
-          "value": "={{ $json.ideaPageId }}"
-        },
-        "simple": true,
-        "propertiesUi": {
-          "propertyValues": [
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/pages/{{ $json.ideaPageId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
             {
-              "key": "Status|select",
-              "selectValue": "Roteirizada"
-            },
-            {
-              "key": "Opções de Título|rich_text",
-              "textContent": "={{ $json.titleOptions }}"
-            },
-            {
-              "key": "Tags YouTube|rich_text",
-              "textContent": "={{ $json.youtubeTags }}"
-            },
-            {
-              "key": "Duração Estimada|rich_text",
-              "textContent": "={{ $json.estimatedDuration }}"
+              "name": "Notion-Version",
+              "value": "2022-06-28"
             }
           ]
         },
-        "blockUi": {
-          "blockValues": [
-            {
-              "type": "paragraph",
-              "richText": false,
-              "textContent": "={{ $json.fullScript }}"
-            }
-          ]
-        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.notionBody) }}",
         "options": {}
       },
-      "id": "notion-update-yt",
+      "id": "http-notion-update",
       "name": "Notion: Atualizar com Roteiro",
-      "type": "n8n-nodes-base.notion",
-      "typeVersion": 2.2,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
-        1750,
+        2000,
         300
       ],
       "credentials": {
@@ -201,30 +168,28 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Roteiro gerado com sucesso para: ' + $json.ideaTitle }) }}",
-        "options": {}
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Roteiro gerado com sucesso para: ' + $('Formatar Roteiro').item.json.ideaTitle }) }}"
       },
       "id": "respond-webhook",
       "name": "Resposta: Sucesso",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        2000,
+        2250,
         300
       ]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, message: 'Nenhuma ideia com status Aprovada encontrada no Notion' }) }}",
-        "options": {}
+        "responseBody": "={{ JSON.stringify({ success: false, message: 'Nenhuma ideia com status Aprovada encontrada no Notion' }) }}"
       },
       "id": "respond-no-ideas",
       "name": "Resposta: Sem Ideias",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1000,
+        1250,
         500
       ]
     }
@@ -234,14 +199,25 @@
       "main": [
         [
           {
-            "node": "Notion: Ideias Aprovadas",
+            "node": "Preparar Query Notion",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Notion: Ideias Aprovadas": {
+    "Preparar Query Notion": {
+      "main": [
+        [
+          {
+            "node": "Notion: Buscar Aprovadas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion: Buscar Aprovadas": {
       "main": [
         [
           {
@@ -257,13 +233,6 @@
         [
           {
             "node": "Preparar Prompt: Roteiro",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Resposta: Sem Ideias",
             "type": "main",
             "index": 0
           }

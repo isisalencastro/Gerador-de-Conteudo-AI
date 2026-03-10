@@ -1,0 +1,241 @@
+{
+  "name": "03 - LinkedIn Isis Alencastro (Seg/Qua/Sex 8h)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1,3,5"
+            }
+          ]
+        }
+      },
+      "id": "schedule-linkedin",
+      "name": "Seg/Qua/Sex às 8h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": "={{ $env.NOTION_NEWSLETTER_DB_ID }}",
+        "returnAll": false,
+        "limit": 1,
+        "sort": {
+          "sortValues": [
+            {
+              "key": "created_time",
+              "value": "descending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notion-get-newsletter-li",
+      "name": "Notion: Última Newsletter",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        500,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-cred",
+          "name": "Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const page = items[0].json;\nconst props = page.properties || {};\nconst title = props.Name?.title?.[0]?.plain_text || 'Newsletter';\n\nlet pageContent = '';\nif (page.body) {\n  pageContent = page.body;\n} else if (page.content) {\n  pageContent = page.content;\n} else {\n  const allText = [];\n  for (const [key, val] of Object.entries(props)) {\n    if (val.rich_text) {\n      const texts = val.rich_text.map(t => t.plain_text).join('');\n      if (texts) allText.push(key + ': ' + texts);\n    }\n  }\n  pageContent = allText.join('\\n\\n');\n}\n\nconst systemPrompt = [\n  'Você é a Isis Alencastro escrevendo para seu LinkedIn pessoal.',\n  'Isis é gestora de automações, assistente de suporte em TI, desenvolvedora full-stack e analista de marketing.',\n  'Ela atua na interseção entre tecnologia, inteligência artificial e negócios digitais.',\n  'No LinkedIn, Isis constrói sua marca pessoal mostrando sua jornada real como profissional e ser humano em evolução.',\n  '',\n  'DIRETRIZES DE TOM E VOZ:',\n  '- Autêntica e vulnerável quando apropriado',\n  '- Profissional mas humana — nunca corporativês frio',\n  '- Construindo em público — compartilha a jornada real com acertos e erros',\n  '- Reflexiva e perspicaz — conecta tecnologia com a condição humana',\n  '- Inspiradora sem ser clichê — mostra, não apenas diz',\n  '',\n  'REGRA FUNDAMENTAL: O post NÃO reproduz a newsletter.',\n  'Ele usa o tema da newsletter como PONTO DE PARTIDA para uma reflexão pessoal.',\n  'O objetivo é criar curiosidade sobre a newsletter e posicionar Isis como referência.'\n].join('\\n');\n\nconst userPrompt = [\n  'ÚLTIMA NEWSLETTER:',\n  'Título: ' + title,\n  '',\n  pageContent,\n  '',\n  '---',\n  '',\n  'Crie 2 posts para o LinkedIn da Isis Alencastro.',\n  '',\n  'CADA POST DEVE:',\n  '1. Usar um tema/notícia da newsletter como ponto de partida',\n  '2. Conectar com carreira, desenvolvimento pessoal ou evolução profissional em um mundo movido por IA',\n  '3. Incluir reflexão pessoal genuína da Isis (como se ela estivesse refletindo sobre o tema)',\n  '4. Criar curiosidade que leve o leitor a querer o produto completo (newsletter)',\n  '5. Terminar com CTA sutil para a newsletter AI Pulse',\n  '',\n  'FORMATO LINKEDIN (otimizado para algoritmo):',\n  '- Hook: Primeira linha poderosa que gera cliques em \"ver mais\" (máx 2 linhas)',\n  '- Espaçamento: Parágrafos curtos (1-3 linhas), com linha em branco entre eles',\n  '- Extensão: 1200-1500 caracteres (ideal para engajamento no LinkedIn)',\n  '- Storytelling: Use estrutura problema → jornada → insight',\n  '',\n  'IMPORTANTE: Varie os estilos entre os 2 posts:',\n  '- Post 1: Mais reflexivo/filosófico sobre o impacto da IA na vida profissional',\n  '- Post 2: Mais prático/tático, compartilhando um aprendizado ou framework',\n  '',\n  'Retorne APENAS JSON válido:',\n  '{',\n  '  \"posts\": [',\n  '    {',\n  '      \"hook\": \"Primeira linha do post (que aparece antes do ver mais)\",',\n  '      \"content\": \"Texto COMPLETO do post incluindo o hook, corpo e CTA\",',\n  '      \"image_prompt\": \"Prompt detalhado para gerar imagem no DALL-E ou Midjourney que complemente o post\",',\n  '      \"char_count\": 1350,',\n  '      \"hashtags\": [\"hashtag1\", \"hashtag2\"],',\n  '      \"best_time_to_post\": \"08:00\",',\n  '      \"engagement_strategy\": \"Pergunta ou provocação para gerar comentários\"',\n  '    }',\n  '  ]',\n  '}'\n].join('\\n');\n\nreturn [{\n  json: {\n    newsletterTitle: title,\n    requestBody: {\n      model: 'gpt-4o',\n      temperature: 0.8,\n      max_tokens: 5000,\n      response_format: { type: 'json_object' },\n      messages: [\n        { role: 'system', content: systemPrompt },\n        { role: 'user', content: userPrompt }\n      ]\n    }\n  }\n}];"
+      },
+      "id": "code-prepare-li",
+      "name": "Preparar Prompt: LinkedIn",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "openai-linkedin",
+      "name": "OpenAI: Gerar Posts LinkedIn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-cred",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = items[0].json;\nconst content = response.choices[0].message.content;\nlet postsData;\ntry {\n  postsData = JSON.parse(content);\n} catch (e) {\n  const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n  postsData = jsonMatch ? JSON.parse(jsonMatch[0]) : { posts: [] };\n}\n\nconst posts = postsData.posts || [];\nconst today = new Date().toISOString().split('T')[0];\n\nreturn posts.map((post, index) => ({\n  json: {\n    title: post.hook,\n    content: post.content,\n    imagePrompt: post.image_prompt || '',\n    charCount: post.char_count || post.content.length,\n    hashtags: (post.hashtags || []).join(' '),\n    engagementStrategy: post.engagement_strategy || '',\n    date: today,\n    postNumber: index + 1,\n    status: 'Revisar'\n  }\n}));"
+      },
+      "id": "code-parse-li",
+      "name": "Separar Posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "create",
+        "databaseId": "={{ $env.NOTION_LINKEDIN_DB_ID }}",
+        "title": "={{ 'LI #' + $json.postNumber + ' - ' + $json.title }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Status|select",
+              "selectValue": "Revisar"
+            },
+            {
+              "key": "Data|date",
+              "date": "={{ $json.date }}"
+            },
+            {
+              "key": "Hashtags|rich_text",
+              "textContent": "={{ $json.hashtags }}"
+            },
+            {
+              "key": "Image Prompt|rich_text",
+              "textContent": "={{ $json.imagePrompt }}"
+            },
+            {
+              "key": "Caracteres|number",
+              "numberValue": "={{ $json.charCount }}"
+            },
+            {
+              "key": "Estratégia|rich_text",
+              "textContent": "={{ $json.engagementStrategy }}"
+            }
+          ]
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "type": "paragraph",
+              "richText": false,
+              "textContent": "={{ $json.content }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notion-save-li",
+      "name": "Notion: Salvar Post LinkedIn",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1500,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-cred",
+          "name": "Notion"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Seg/Qua/Sex às 8h": {
+      "main": [
+        [
+          {
+            "node": "Notion: Última Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion: Última Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Preparar Prompt: LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Prompt: LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "OpenAI: Gerar Posts LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI: Gerar Posts LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Separar Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separar Posts": {
+      "main": [
+        [
+          {
+            "node": "Notion: Salvar Post LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "linkedin"
+    },
+    {
+      "name": "automação"
+    }
+  ],
+  "pinData": {}
+}

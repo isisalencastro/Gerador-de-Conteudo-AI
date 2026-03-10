@@ -1,0 +1,380 @@
+{
+  "name": "01 - Newsletter Pipeline (Diário 15h)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 15 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-newsletter",
+      "name": "Diário às 15h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": "={{ $env.NOTION_NEWSLETTER_DB_ID }}",
+        "returnAll": false,
+        "limit": 30,
+        "options": {}
+      },
+      "id": "notion-get-previous",
+      "name": "Notion: Edições Anteriores",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        500,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-cred",
+          "name": "Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const previousTopics = [];\nfor (const item of items) {\n  const props = item.json.properties || {};\n  const titleArr = props.Name?.title || [];\n  if (titleArr.length > 0) previousTopics.push(titleArr[0].plain_text);\n  const topicsArr = props.Topics?.multi_select || [];\n  for (const t of topicsArr) previousTopics.push(t.name);\n}\nconst uniqueTopics = [...new Set(previousTopics)];\nconst today = new Date().toLocaleDateString('pt-BR');\n\nconst systemPrompt = [\n  'Você é um curador de notícias especializado em Inteligência Artificial e Tecnologia.',\n  'Sua missão é identificar os 10 acontecimentos mais relevantes e impactantes das últimas 24 a 48 horas.',\n  'Foque APENAS em fatos concretos e verificáveis — não inclua rumores ou especulações.',\n  'Priorize: lançamentos de modelos de IA, atualizações de produtos, aquisições, parcerias estratégicas,',\n  'pesquisas publicadas, mudanças regulatórias e marcos tecnológicos.'\n].join(' ');\n\nconst userPrompt = [\n  'Data de hoje: ' + today,\n  '',\n  'Identifique os 10 tópicos mais relevantes das últimas 24-48 horas em IA e tecnologia.',\n  '',\n  'Categorias aceitas: IA, Cloud, Dev, Negócios, Regulação',\n  '',\n  'Tópicos já cobertos anteriormente (EVITAR repetição):',\n  uniqueTopics.length > 0 ? uniqueTopics.join(', ') : 'Nenhum registro anterior',\n  '',\n  'Retorne APENAS um JSON válido sem markdown, no formato:',\n  '{',\n  '  \"topics\": [',\n  '    {',\n  '      \"title\": \"Título conciso do acontecimento\",',\n  '      \"category\": \"IA|Cloud|Dev|Negócios|Regulação\",',\n  '      \"summary\": \"1-2 frases objetivas sobre o que aconteceu\"',\n  '    }',\n  '  ]',\n  '}'\n].join('\\n');\n\nreturn [{\n  json: {\n    previousTopics: uniqueTopics,\n    requestBody: {\n      model: 'gpt-4o',\n      temperature: 0.7,\n      max_tokens: 4000,\n      response_format: { type: 'json_object' },\n      messages: [\n        { role: 'system', content: systemPrompt },\n        { role: 'user', content: userPrompt }\n      ]\n    }\n  }\n}];"
+      },
+      "id": "code-prepare-topics",
+      "name": "Preparar Prompt: Tópicos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "openai-topics",
+      "name": "OpenAI: Descobrir Tópicos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-cred",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = items[0].json;\nconst content = response.choices[0].message.content;\nlet topicsData;\ntry {\n  topicsData = JSON.parse(content);\n} catch (e) {\n  const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n  topicsData = jsonMatch ? JSON.parse(jsonMatch[0]) : { topics: [] };\n}\n\nconst topics = topicsData.topics || [];\nconst topicsSummary = topics.map((t, i) =>\n  (i + 1) + '. [' + t.category + '] ' + t.title + ' — ' + t.summary\n).join('\\n');\n\nconst systemPrompt = [\n  'Você é um pesquisador investigativo de tecnologia com acesso a conhecimento atualizado.',\n  'Para cada tópico fornecido, elabore uma pesquisa aprofundada e factual.',\n  'Inclua contexto histórico, impacto no mercado, players envolvidos e referências de fontes',\n  'como TechCrunch, The Verge, MIT Technology Review, Ars Technica e blogs oficiais.'\n].join(' ');\n\nconst userPrompt = [\n  'Faça deep research sobre cada um dos tópicos abaixo.',\n  '',\n  'TÓPICOS:',\n  topicsSummary,\n  '',\n  'Para CADA tópico, forneça:',\n  '- detailed_summary: Resumo detalhado (3-4 parágrafos)',\n  '- historical_context: Contexto histórico relevante',\n  '- market_impact: Impacto no mercado e na indústria',\n  '- key_players: Empresas e pessoas envolvidas',\n  '- sources: Lista de fontes reais (URLs quando possível)',\n  '',\n  'Retorne APENAS JSON válido sem markdown:',\n  '{',\n  '  \"research\": [',\n  '    {',\n  '      \"title\": \"...\",',\n  '      \"category\": \"...\",',\n  '      \"detailed_summary\": \"...\",',\n  '      \"historical_context\": \"...\",',\n  '      \"market_impact\": \"...\",',\n  '      \"key_players\": [\"...\"],',\n  '      \"sources\": [\"...\"]',\n  '    }',\n  '  ]',\n  '}'\n].join('\\n');\n\nreturn [{\n  json: {\n    topics: topics,\n    requestBody: {\n      model: 'gpt-4o',\n      temperature: 0.5,\n      max_tokens: 10000,\n      response_format: { type: 'json_object' },\n      messages: [\n        { role: 'system', content: systemPrompt },\n        { role: 'user', content: userPrompt }\n      ]\n    }\n  }\n}];"
+      },
+      "id": "code-prepare-research",
+      "name": "Preparar Prompt: Pesquisa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "openai-research",
+      "name": "OpenAI: Deep Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-cred",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = items[0].json;\nconst content = response.choices[0].message.content;\nlet researchData;\ntry {\n  researchData = JSON.parse(content);\n} catch (e) {\n  const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n  researchData = jsonMatch ? JSON.parse(jsonMatch[0]) : { research: [] };\n}\n\nconst research = researchData.research || [];\nconst today = new Date().toLocaleDateString('pt-BR', {\n  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'\n});\n\nconst researchText = research.map(r => [\n  '## ' + r.title + ' [' + r.category + ']',\n  '',\n  '### Resumo',\n  r.detailed_summary,\n  '',\n  '### Contexto Histórico',\n  r.historical_context,\n  '',\n  '### Impacto no Mercado',\n  r.market_impact,\n  '',\n  '### Players Envolvidos',\n  (r.key_players || []).join(', '),\n  '',\n  '### Fontes',\n  (r.sources || []).join('\\n'),\n  ''\n].join('\\n')).join('\\n---\\n');\n\nconst systemPrompt = [\n  'Você é a Isis Alencastro, redatora da newsletter \"AI Pulse\" da IBACompany.',\n  'Seu tom é inteligente mas acessível — como uma conversa informada entre colegas de tecnologia.',\n  'Use dados concretos, evite hype vazio. Seja analítica e perspicaz.',\n  'Você conecta fatos técnicos com impactos reais para profissionais e empresas.'\n].join(' ');\n\nconst userPrompt = [\n  'Escreva a edição de hoje (' + today + ') da newsletter AI Pulse.',\n  '',\n  'PESQUISA BASE:',\n  researchText,\n  '',\n  'ESTRUTURA OBRIGATÓRIA DA NEWSLETTER:',\n  '',\n  '1. TÍTULO: Chamativo, que capture a essência do dia em IA/tech (máx 80 caracteres)',\n  '',\n  '2. RESUMO EXECUTIVO: 3-4 parágrafos resumindo os destaques do dia de forma envolvente.',\n  '   Comece com o fato mais impactante. Crie narrativa que conecte os acontecimentos.',\n  '',\n  '3. SEÇÕES POR CATEGORIA: Agrupe as notícias em seções (IA, Cloud, Dev, Negócios, Regulação).',\n  '   Cada notícia deve ter:',\n  '   - Título da notícia',\n  '   - Resumo de 2-3 parágrafos com fatos e análise',\n  '   - \"Por que isso importa:\" com análise de impacto (1-2 parágrafos)',\n  '',\n  '4. PENSAMENTO DO DIA: Escolha o tema mais relevante e escreva uma análise aprofundada',\n  '   de 4-5 parágrafos. Conecte com tendências maiores do mercado. Reflita sobre o impacto',\n  '   para profissionais de tecnologia. Este é o diferencial da newsletter.',\n  '',\n  '5. ENCERRAMENTO: Despedida pessoal da Isis, com prévia do próximo dia.',\n  '',\n  'Retorne APENAS JSON válido:',\n  '{',\n  '  \"title\": \"Título da newsletter\",',\n  '  \"executive_summary\": \"Resumo executivo completo\",',\n  '  \"sections\": [',\n  '    {',\n  '      \"category\": \"Nome da categoria\",',\n  '      \"articles\": [',\n  '        {',\n  '          \"title\": \"Título do artigo\",',\n  '          \"content\": \"Conteúdo completo\",',\n  '          \"why_it_matters\": \"Análise de impacto\"',\n  '        }',\n  '      ]',\n  '    }',\n  '  ],',\n  '  \"thought_of_the_day\": {',\n  '    \"title\": \"Título do pensamento\",',\n  '    \"content\": \"Análise aprofundada completa\"',\n  '  },',\n  '  \"closing\": \"Texto de encerramento\",',\n  '  \"topics_covered\": [\"lista\", \"de\", \"tópicos\", \"cobertos\"]',\n  '}'\n].join('\\n');\n\nreturn [{\n  json: {\n    research: research,\n    requestBody: {\n      model: 'gpt-4o',\n      temperature: 0.7,\n      max_tokens: 12000,\n      response_format: { type: 'json_object' },\n      messages: [\n        { role: 'system', content: systemPrompt },\n        { role: 'user', content: userPrompt }\n      ]\n    }\n  }\n}];"
+      },
+      "id": "code-prepare-newsletter",
+      "name": "Preparar Prompt: Newsletter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1750,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "openai-newsletter",
+      "name": "OpenAI: Escrever Newsletter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-cred",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = items[0].json;\nconst content = response.choices[0].message.content;\nlet newsletter;\ntry {\n  newsletter = JSON.parse(content);\n} catch (e) {\n  const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n  newsletter = jsonMatch ? JSON.parse(jsonMatch[0]) : {};\n}\n\nconst today = new Date().toISOString().split('T')[0];\n\nlet htmlContent = '<h1>' + (newsletter.title || 'AI Pulse') + '</h1>';\nhtmlContent += '<div class=\"executive-summary\">' + (newsletter.executive_summary || '').replace(/\\n/g, '<br>') + '</div>';\nhtmlContent += '<hr>';\n\nif (newsletter.sections) {\n  for (const section of newsletter.sections) {\n    htmlContent += '<h2>' + section.category + '</h2>';\n    for (const article of (section.articles || [])) {\n      htmlContent += '<h3>' + article.title + '</h3>';\n      htmlContent += '<p>' + article.content.replace(/\\n/g, '<br>') + '</p>';\n      htmlContent += '<p><strong>Por que isso importa:</strong> ' + article.why_it_matters.replace(/\\n/g, '<br>') + '</p>';\n      htmlContent += '<hr>';\n    }\n  }\n}\n\nif (newsletter.thought_of_the_day) {\n  htmlContent += '<h2>💡 Pensamento do Dia: ' + newsletter.thought_of_the_day.title + '</h2>';\n  htmlContent += '<p>' + newsletter.thought_of_the_day.content.replace(/\\n/g, '<br>') + '</p>';\n}\n\nif (newsletter.closing) {\n  htmlContent += '<hr><p><em>' + newsletter.closing.replace(/\\n/g, '<br>') + '</em></p>';\n}\n\nlet markdownContent = '# ' + (newsletter.title || 'AI Pulse') + '\\n\\n';\nmarkdownContent += newsletter.executive_summary + '\\n\\n---\\n\\n';\nif (newsletter.sections) {\n  for (const section of newsletter.sections) {\n    markdownContent += '## ' + section.category + '\\n\\n';\n    for (const article of (section.articles || [])) {\n      markdownContent += '### ' + article.title + '\\n\\n';\n      markdownContent += article.content + '\\n\\n';\n      markdownContent += '**Por que isso importa:** ' + article.why_it_matters + '\\n\\n---\\n\\n';\n    }\n  }\n}\nif (newsletter.thought_of_the_day) {\n  markdownContent += '## 💡 Pensamento do Dia: ' + newsletter.thought_of_the_day.title + '\\n\\n';\n  markdownContent += newsletter.thought_of_the_day.content + '\\n\\n';\n}\nif (newsletter.closing) {\n  markdownContent += '---\\n\\n*' + newsletter.closing + '*\\n';\n}\n\nreturn [{\n  json: {\n    title: newsletter.title || 'AI Pulse - ' + today,\n    date: today,\n    htmlContent: htmlContent,\n    markdownContent: markdownContent,\n    topicsCovered: newsletter.topics_covered || [],\n    newsletterData: newsletter,\n    status: 'Revisar'\n  }\n}];"
+      },
+      "id": "code-format-output",
+      "name": "Formatar Newsletter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "create",
+        "databaseId": "={{ $env.NOTION_NEWSLETTER_DB_ID }}",
+        "title": "={{ $json.title }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Status|select",
+              "selectValue": "Revisar"
+            },
+            {
+              "key": "Data|date",
+              "date": "={{ $json.date }}"
+            }
+          ]
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "type": "paragraph",
+              "richText": false,
+              "textContent": "={{ $json.markdownContent }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notion-save-newsletter",
+      "name": "Notion: Salvar Newsletter",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        2500,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-cred",
+          "name": "Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.beehiiv.com/v2/publications/{{ $env.BEEHIIV_PUBLICATION_ID }}/posts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  title: $('Formatar Newsletter').item.json.title,\n  subtitle: 'AI Pulse - Newsletter diária de IA e Tecnologia',\n  content: $('Formatar Newsletter').item.json.htmlContent,\n  status: 'draft'\n}) }}",
+        "options": {}
+      },
+      "id": "beehiiv-publish",
+      "name": "Beehiiv: Publicar Newsletter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2750,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "beehiiv-cred",
+          "name": "Beehiiv API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Diário às 15h": {
+      "main": [
+        [
+          {
+            "node": "Notion: Edições Anteriores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion: Edições Anteriores": {
+      "main": [
+        [
+          {
+            "node": "Preparar Prompt: Tópicos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Prompt: Tópicos": {
+      "main": [
+        [
+          {
+            "node": "OpenAI: Descobrir Tópicos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI: Descobrir Tópicos": {
+      "main": [
+        [
+          {
+            "node": "Preparar Prompt: Pesquisa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Prompt: Pesquisa": {
+      "main": [
+        [
+          {
+            "node": "OpenAI: Deep Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI: Deep Research": {
+      "main": [
+        [
+          {
+            "node": "Preparar Prompt: Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Prompt: Newsletter": {
+      "main": [
+        [
+          {
+            "node": "OpenAI: Escrever Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI: Escrever Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Formatar Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Notion: Salvar Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion: Salvar Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Beehiiv: Publicar Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "newsletter"
+    },
+    {
+      "name": "automação"
+    }
+  ],
+  "pinData": {}
+}

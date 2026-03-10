@@ -1,0 +1,320 @@
+{
+  "name": "05 - YouTube Roteirizador (Manual)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "youtube-script",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-yt-script",
+      "name": "Webhook: Roteirizar Vídeo",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "youtube-script-webhook"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": "={{ $env.NOTION_YOUTUBE_DB_ID }}",
+        "returnAll": false,
+        "limit": 10,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Status|select",
+              "condition": "equal",
+              "selectValue": "Aprovada"
+            }
+          ],
+          "combinator": "and"
+        },
+        "sort": {
+          "sortValues": [
+            {
+              "key": "created_time",
+              "value": "descending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notion-get-approved",
+      "name": "Notion: Ideias Aprovadas",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        500,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-cred",
+          "name": "Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [],
+          "number": [
+            {
+              "value1": "={{ $input.all().length }}",
+              "operation": "largerEqual",
+              "value2": 1
+            }
+          ]
+        }
+      },
+      "id": "if-has-ideas",
+      "name": "Tem Ideias Aprovadas?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const idea = items[0].json;\nconst props = idea.properties || {};\nconst title = props.Name?.title?.[0]?.plain_text || 'Ideia de vídeo';\n\nlet ideaDetails = 'Título: ' + title + '\\n';\n\nfor (const [key, val] of Object.entries(props)) {\n  if (val.rich_text && val.rich_text.length > 0) {\n    const text = val.rich_text.map(t => t.plain_text).join('');\n    if (text) ideaDetails += key + ': ' + text + '\\n';\n  }\n  if (val.select && val.select.name) {\n    ideaDetails += key + ': ' + val.select.name + '\\n';\n  }\n}\n\nlet bodyContent = '';\nif (idea.body) bodyContent = idea.body;\nif (idea.content) bodyContent = idea.content;\n\nconst systemPrompt = [\n  'Você é roteirista da criadora de conteúdo Isis Alencastro para YouTube.',\n  'Isis é gestora de automações, desenvolvedora full-stack e analista de marketing.',\n  'Ela fala sobre tecnologia, IA e desenvolvimento pessoal com autenticidade.',\n  '',\n  'ESTILO DE ROTEIRO:',\n  '- Conversacional — como se Isis estivesse falando diretamente com um amigo',\n  '- Dinâmico — mudanças de ritmo, perguntas retóricas, hooks visuais',\n  '- Pessoal — marcações claras onde Isis deve inserir histórias pessoais',\n  '- Profissional — conteúdo denso mas acessível',\n  '',\n  'MARCAÇÕES ESPECIAIS NO ROTEIRO:',\n  '- [INSERIR HISTÓRIA PESSOAL: sugestão do que contar] — onde Isis adiciona vivências próprias',\n  '- [NOTA DE PRODUÇÃO: descrição] — sugestões de B-roll, gráficos, transições, zoom',\n  '- [GANCHO VISUAL: descrição] — momentos que precisam de destaque visual',\n  '- [PAUSA DRAMÁTICA] — momentos de silêncio intencional',\n  '- [MUDANÇA DE ENERGIA] — quando o tom deve mudar'\n].join('\\n');\n\nconst userPrompt = [\n  'IDEIA DO VÍDEO:',\n  ideaDetails,\n  '',\n  bodyContent ? 'DETALHES ADICIONAIS:\\n' + bodyContent + '\\n' : '',\n  'Crie um MINI ROTEIRO COMPLETO para este vídeo.',\n  '',\n  'ESTRUTURA OBRIGATÓRIA:',\n  '',\n  '1. GANCHO (0:00-0:30)',\n  '   Primeiros 30 segundos que prendem o espectador.',\n  '   Deve criar curiosidade imediata, usar dado impactante ou pergunta provocativa.',\n  '   [NOTA DE PRODUÇÃO] com sugestão de como filmar.',\n  '',\n  '2. INTRO (0:30-1:30)',\n  '   Contexto e promessa clara do que o vídeo entrega.',\n  '   Isis se apresenta brevemente e estabelece credibilidade.',\n  '   [INSERIR HISTÓRIA PESSOAL] — por que esse tema importa para ela.',\n  '',\n  '3. DESENVOLVIMENTO (1:30-8:00)',\n  '   3-4 blocos de conteúdo, cada um com:',\n  '   - Subtítulo do bloco',\n  '   - Conteúdo principal (falas da Isis)',\n  '   - [INSERIR HISTÓRIA PESSOAL] em pelo menos 2 blocos',\n  '   - [NOTA DE PRODUÇÃO] com sugestões de B-roll e gráficos',\n  '   - Transição natural para o próximo bloco',\n  '',\n  '4. CLÍMAX (8:00-9:00)',\n  '   O insight principal ou virada do vídeo.',\n  '   O momento \"aha\" que faz tudo se conectar.',\n  '',\n  '5. CTA (9:00-9:30)',\n  '   Chamada para ação: inscrever no canal, assinar a newsletter AI Pulse, comentar.',\n  '   Deve sentir natural, não forçado.',\n  '',\n  '6. ENCERRAMENTO (9:30-10:00)',\n  '   Despedida pessoal, prévia do próximo vídeo.',\n  '',\n  'ADICIONAL — Forneça também:',\n  '- 3 opções de título para teste A/B (SEO-friendly, chamativo)',\n  '- 3 sugestões de thumbnail (descrição visual detalhada)',\n  '- Tags sugeridas para YouTube (10-15 tags)',\n  '- Descrição sugerida para o vídeo (com links e timestamps)',\n  '',\n  'Retorne APENAS JSON válido:',\n  '{',\n  '  \"script\": {',\n  '    \"hook\": \"Texto completo do gancho com marcações\",',\n  '    \"intro\": \"Texto completo da intro com marcações\",',\n  '    \"development\": [',\n  '      {',\n  '        \"block_title\": \"Título do bloco\",',\n  '        \"content\": \"Texto completo com marcações\",',\n  '        \"production_notes\": \"Notas de produção para este bloco\"',\n  '      }',\n  '    ],',\n  '    \"climax\": \"Texto do clímax com marcações\",',\n  '    \"cta\": \"Texto do CTA\",',\n  '    \"closing\": \"Texto do encerramento\"',\n  '  },',\n  '  \"title_options\": [\"Título 1\", \"Título 2\", \"Título 3\"],',\n  '  \"thumbnail_suggestions\": [',\n  '    { \"description\": \"Descrição visual da thumbnail\", \"text_overlay\": \"Texto na thumbnail\" }',\n  '  ],',\n  '  \"youtube_tags\": [\"tag1\", \"tag2\"],',\n  '  \"video_description\": \"Descrição completa com timestamps\",',\n  '  \"estimated_duration\": \"duração estimada\"',\n  '}'\n].join('\\n');\n\nreturn [{\n  json: {\n    ideaTitle: title,\n    ideaPageId: idea.id,\n    requestBody: {\n      model: 'gpt-4o',\n      temperature: 0.75,\n      max_tokens: 10000,\n      response_format: { type: 'json_object' },\n      messages: [\n        { role: 'system', content: systemPrompt },\n        { role: 'user', content: userPrompt }\n      ]\n    }\n  }\n}];"
+      },
+      "id": "code-prepare-script",
+      "name": "Preparar Prompt: Roteiro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "openai-script",
+      "name": "OpenAI: Gerar Roteiro",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1250,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-cred",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = items[0].json;\nconst content = response.choices[0].message.content;\nlet scriptData;\ntry {\n  scriptData = JSON.parse(content);\n} catch (e) {\n  const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n  scriptData = jsonMatch ? JSON.parse(jsonMatch[0]) : {};\n}\n\nconst script = scriptData.script || {};\nconst today = new Date().toISOString().split('T')[0];\n\nlet fullScript = '# ROTEIRO\\n\\n';\nfullScript += '## 🎬 GANCHO (0:00-0:30)\\n' + (script.hook || '') + '\\n\\n';\nfullScript += '## 📢 INTRO (0:30-1:30)\\n' + (script.intro || '') + '\\n\\n';\n\nif (script.development) {\n  fullScript += '## 📝 DESENVOLVIMENTO\\n\\n';\n  script.development.forEach((block, i) => {\n    fullScript += '### Bloco ' + (i + 1) + ': ' + block.block_title + '\\n';\n    fullScript += block.content + '\\n';\n    if (block.production_notes) {\n      fullScript += '\\n[NOTA DE PRODUÇÃO] ' + block.production_notes + '\\n';\n    }\n    fullScript += '\\n';\n  });\n}\n\nfullScript += '## 💡 CLÍMAX\\n' + (script.climax || '') + '\\n\\n';\nfullScript += '## 📣 CTA\\n' + (script.cta || '') + '\\n\\n';\nfullScript += '## 👋 ENCERRAMENTO\\n' + (script.closing || '') + '\\n\\n';\n\nfullScript += '---\\n\\n## OPÇÕES DE TÍTULO\\n';\n(scriptData.title_options || []).forEach((t, i) => {\n  fullScript += (i + 1) + '. ' + t + '\\n';\n});\n\nfullScript += '\\n## SUGESTÕES DE THUMBNAIL\\n';\n(scriptData.thumbnail_suggestions || []).forEach((t, i) => {\n  fullScript += (i + 1) + '. ' + t.description + ' | Texto: ' + (t.text_overlay || '') + '\\n';\n});\n\nfullScript += '\\n## TAGS\\n' + (scriptData.youtube_tags || []).join(', ');\nfullScript += '\\n\\n## DESCRIÇÃO DO VÍDEO\\n' + (scriptData.video_description || '');\n\nconst ideaTitle = $('Preparar Prompt: Roteiro').item.json.ideaTitle;\nconst ideaPageId = $('Preparar Prompt: Roteiro').item.json.ideaPageId;\n\nreturn [{\n  json: {\n    ideaTitle: ideaTitle,\n    ideaPageId: ideaPageId,\n    fullScript: fullScript,\n    titleOptions: (scriptData.title_options || []).join(' | '),\n    thumbnailSuggestions: JSON.stringify(scriptData.thumbnail_suggestions || []),\n    youtubeTags: (scriptData.youtube_tags || []).join(', '),\n    videoDescription: scriptData.video_description || '',\n    estimatedDuration: scriptData.estimated_duration || '',\n    date: today,\n    scriptData: scriptData,\n    status: 'Roteirizada'\n  }\n}];"
+      },
+      "id": "code-format-script",
+      "name": "Formatar Roteiro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": "={{ $json.ideaPageId }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Status|select",
+              "selectValue": "Roteirizada"
+            },
+            {
+              "key": "Opções de Título|rich_text",
+              "textContent": "={{ $json.titleOptions }}"
+            },
+            {
+              "key": "Tags YouTube|rich_text",
+              "textContent": "={{ $json.youtubeTags }}"
+            },
+            {
+              "key": "Duração Estimada|rich_text",
+              "textContent": "={{ $json.estimatedDuration }}"
+            }
+          ]
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "type": "paragraph",
+              "richText": false,
+              "textContent": "={{ $json.fullScript }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notion-update-yt",
+      "name": "Notion: Atualizar com Roteiro",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1750,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-cred",
+          "name": "Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Roteiro gerado com sucesso para: ' + $json.ideaTitle }) }}",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Resposta: Sucesso",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, message: 'Nenhuma ideia com status Aprovada encontrada no Notion' }) }}",
+        "options": {}
+      },
+      "id": "respond-no-ideas",
+      "name": "Resposta: Sem Ideias",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1000,
+        500
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: Roteirizar Vídeo": {
+      "main": [
+        [
+          {
+            "node": "Notion: Ideias Aprovadas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion: Ideias Aprovadas": {
+      "main": [
+        [
+          {
+            "node": "Tem Ideias Aprovadas?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem Ideias Aprovadas?": {
+      "main": [
+        [
+          {
+            "node": "Preparar Prompt: Roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resposta: Sem Ideias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Prompt: Roteiro": {
+      "main": [
+        [
+          {
+            "node": "OpenAI: Gerar Roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI: Gerar Roteiro": {
+      "main": [
+        [
+          {
+            "node": "Formatar Roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Roteiro": {
+      "main": [
+        [
+          {
+            "node": "Notion: Atualizar com Roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion: Atualizar com Roteiro": {
+      "main": [
+        [
+          {
+            "node": "Resposta: Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "youtube"
+    },
+    {
+      "name": "automação"
+    }
+  ],
+  "pinData": {}
+}

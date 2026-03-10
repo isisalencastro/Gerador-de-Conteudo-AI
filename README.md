@@ -12,8 +12,8 @@ Newsletter Low-Ticket (PRODUTO) ─── 15h diário
         │
    ┌────┴─────┐
    ▼          ▼
-Instagram   LinkedIn          YouTube Monitor ─── 9h diário
-IBACompany  Isis Alencastro   YouTube Script ──── Manual
+Instagram   LinkedIn          Gerador de Ideias ── Qua 9h (semanal)
+IBACompany  Isis Alencastro   YouTube Script ────── Manual
 (15h30)     (Seg/Qua/Sex 8h)
    │          │
    ▼          ▼
@@ -28,7 +28,7 @@ IBACompany  Isis Alencastro   YouTube Script ──── Manual
 | 01 | Newsletter Pipeline | `01-newsletter-pipeline.json` | Diário 15h | Descobre tópicos, pesquisa, escreve newsletter completa |
 | 02 | Instagram IBACompany | `02-instagram-content.json` | Diário 15h30 | Gera 3 posts a partir da newsletter do dia |
 | 03 | LinkedIn Isis | `03-linkedin-content.json` | Seg/Qua/Sex 8h | Gera 2 posts reflexivos conectados à newsletter |
-| 04 | YouTube Monitor | `04-youtube-monitor.json` | Diário 9h | Monitora tendências e gera 5 ideias de vídeo |
+| 04 | Gerador de Ideias YouTube | `04-youtube-monitor.json` | Semanal Qua 9h | Gera 5 ideias de vídeo com foco em jornada pessoal |
 | 05 | YouTube Roteirizador | `05-youtube-scriptwriter.json` | Manual (Webhook) | Gera roteiro completo para ideia aprovada |
 
 ## Pré-requisitos
@@ -115,12 +115,12 @@ Crie 4 databases no Notion e conecte sua Integration a cada um.
 | Name | Title | Título/ideia do vídeo |
 | Status | Select | Opções: `Ideia`, `Aprovada`, `Roteirizada`, `Filmada`, `Publicada` |
 | Data | Date | Data de criação |
-| Formato | Select | Opções: `tutorial`, `opinião`, `storytelling`, `lista`, `análise` |
+| Formato | Select | Opções: `video-ensaio`, `storytelling`, `reflexão`, `diário-em-vídeo`, `análise-pessoal` |
 | Inspiração | Rich Text | Fonte de inspiração |
 | Ângulo Isis | Rich Text | Perspectiva da Isis |
 | Público-alvo | Rich Text | Audiência target |
 | Duração Estimada | Rich Text | Tempo estimado |
-| Potencial Viral | Select | Opções: `baixo`, `médio`, `alto` |
+| Potencial Viral | Select | Opções: `Baixo`, `Médio`, `Alto` |
 | Keywords | Rich Text | Palavras-chave |
 | Opções de Título | Rich Text | Alternativas de título para A/B test |
 | Tags YouTube | Rich Text | Tags para YouTube |
@@ -209,14 +209,14 @@ Code: Separa posts com metadata
 Notion: Salva cada post com status "Revisar"
 ```
 
-### 04 — YouTube Monitor
+### 04 — Gerador de Ideias YouTube
 
 ```
-Schedule (9h)
+Schedule (Qua 9h — semanal)
     ↓
 Notion: Busca ideias existentes (evitar repetição)
     ↓
-Code: Monta prompt com canais de referência
+Code: Monta prompt com filosofia do canal e pilares de conteúdo
     ↓
 OpenAI: Gera 5 ideias de vídeo (GPT-4o)
     ↓
@@ -275,7 +275,7 @@ Os horários estão nos nodes **Schedule Trigger** usando expressões cron:
 | Newsletter | `0 15 * * *` | Todo dia às 15h |
 | Instagram | `30 15 * * *` | Todo dia às 15h30 |
 | LinkedIn | `0 8 * * 1,3,5` | Seg/Qua/Sex às 8h |
-| YouTube Monitor | `0 9 * * *` | Todo dia às 9h |
+| Gerador de Ideias | Semanal (Qua) | Toda quarta-feira às 9h |
 
 ### Ajustar Modelo de IA
 
@@ -292,9 +292,9 @@ Todos os workflows usam `gpt-4o`. Para trocar, edite o campo `model` nos Code no
 | Newsletter | 3 chamadas/dia | ~$15-25/mês |
 | Instagram | 1 chamada/dia | ~$3-5/mês |
 | LinkedIn | 1 chamada (3x/semana) | ~$2-3/mês |
-| YouTube Monitor | 1 chamada/dia | ~$3-5/mês |
+| Gerador de Ideias | 1 chamada/semana | ~$1-2/mês |
 | YouTube Script | Sob demanda | ~$0.50/roteiro |
-| **Total estimado** | | **~$25-40/mês** |
+| **Total estimado** | | **~$22-36/mês** |
 
 ## Troubleshooting
 
@@ -314,7 +314,7 @@ Todos os workflows usam `gpt-4o`. Para trocar, edite o campo `model` nos Code no
 │   ├── 01-newsletter-pipeline.json    # Pipeline completo da newsletter
 │   ├── 02-instagram-content.json      # Gerador de posts Instagram
 │   ├── 03-linkedin-content.json       # Gerador de posts LinkedIn
-│   ├── 04-youtube-monitor.json        # Monitor de ideias YouTube
+│   ├── 04-youtube-monitor.json        # Gerador de ideias YouTube (semanal)
 │   └── 05-youtube-scriptwriter.json   # Roteirizador de vídeos
 ├── docs/
 │   └── notion-setup.md               # Guia detalhado do Notion

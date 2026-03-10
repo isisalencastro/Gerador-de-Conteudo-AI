@@ -1084,18 +1084,22 @@ return posts.map((post, index) => ({
 }
 
 // ============================================================
-// WORKFLOW 4: YOUTUBE MONITOR (Diário às 9h)
+// WORKFLOW 4: GERADOR DE IDEIAS YOUTUBE (Semanal Qua 9h)
 // ============================================================
 function buildYouTubeMonitor() {
   const nodes = [
     {
       parameters: {
         rule: {
-          interval: [{ field: "cronExpression", expression: "0 9 * * *" }]
+          interval: [{
+            field: "weeks",
+            triggerAtDay: [3],
+            triggerAtHour: 9
+          }]
         }
       },
       id: "schedule-youtube",
-      name: "Diário às 9h",
+      name: "Gerador automático",
       type: "n8n-nodes-base.scheduleTrigger",
       typeVersion: 1.2,
       position: [250, 300]
@@ -1105,8 +1109,6 @@ function buildYouTubeMonitor() {
         resource: "databasePage",
         operation: "getAll",
         databaseId: "={{ $env.NOTION_YOUTUBE_DB_ID }}",
-        returnAll: false,
-        limit: 50,
         options: {}
       },
       id: "notion-get-yt-ideas",
@@ -1127,60 +1129,97 @@ for (const item of items) {
   const title = props.Name?.title?.[0]?.plain_text;
   if (title) existingIdeas.push(title);
 }
-
 const today = new Date().toLocaleDateString('pt-BR');
 
 const systemPrompt = [
-  'Você é um assistente de pesquisa e estrategista de conteúdo para a criadora Isis Alencastro.',
+  'Você é um assistente de estratégia de conteúdo para a criadora Isis Alencastro.',
   'Isis é gestora de automações, desenvolvedora full-stack e analista de marketing.',
-  'Ela cria conteúdo no YouTube sobre tecnologia, IA e desenvolvimento pessoal.',
+  'Ela está construindo um canal no YouTube na interseção entre tecnologia, IA e desenvolvimento pessoal.',
   '',
-  'CANAIS DE REFERÊNCIA QUE INSPIRAM ISIS (em inglês):',
-  '- Ali Abdaal (produtividade, vida de creator)',
-  '- Thomas Frank (produtividade, sistemas, Notion)',
-  '- Matt D\\'Avella (minimalismo, hábitos, documentários)',
-  '- Fireship (desenvolvimento, tech trends, formato rápido)',
-  '- Theo (t3.gg - web dev, opiniões fortes)',
-  '- NetworkChuck (TI, cloud, networking)',
-  '- Tina Huang (data science, carreira em tech)',
-  '- Devin Nash (marketing digital, creator economy)',
+  'FILOSOFIA CENTRAL DO CANAL — LEIA COM ATENÇÃO:',
+  'Isis NÃO é expert dando dicas. Isis é uma pessoa em evolução documentando sua jornada.',
+  'A diferença é fundamental:',
+  '- Expert diz "faça assim" → Isis diz "eu tentei isso e aprendi tal coisa"',
+  '- Expert ensina de cima → Isis caminha junto com o espectador',
+  '- Expert tem respostas → Isis tem perguntas honestas e descobertas reais',
+  'O canal é um diário público de crescimento — profissional E pessoal.',
+  'O espectador não sai com um tutorial. Sai sentindo que não está sozinho.',
   '',
-  'O DIFERENCIAL DE ISIS: Ela está na interseção entre tech, IA e autodesenvolvimento.',
-  'Mostra a jornada REAL — não vende perfeição, mostra processo.',
-  'Seu público: profissionais de TI, devs, pessoas migrando para tech, curiosos sobre IA.'
+  'POSICIONAMENTO CENTRAL DE ISIS:',
+  'Ela usa tecnologia como ferramenta de autoconhecimento, produtividade consciente',
+  'e construção de vida com propósito. Mostra a jornada REAL: acertos, erros, crises e viradas.',
+  'O tech é o contexto. O desenvolvimento pessoal é o coração do canal.',
+  '',
+  'PILARES DE CONTEÚDO (em ordem de prioridade):',
+  '1. EVOLUÇÃO DOCUMENTADA — mostrar quem ela era, quem está se tornando, o que mudou',
+  '2. AUTOCONHECIMENTO na jornada em tecnologia — o que aprender revela sobre si mesma',
+  '3. DESENVOLVIMENTO PESSOAL aplicado à vida de quem trabalha com tech',
+  '   — identidade profissional, síndrome do impostor, burnout, limites, propósito',
+  '4. PRODUTIVIDADE CONSCIENTE — sistemas que respeitam a vida, não apenas otimizam',
+  '5. IA & TECH como gatilho de reflexão pessoal — não como tema técnico isolado',
+  '',
+  'CANAIS DE REFERÊNCIA:',
+  '- pearlieee (video-ensaios intimistas, psicologia, autoconhecimento e healing com tom pessoal)',
+  '- Nathaniel Drew (video-ensaios introspectivos sobre identidade e mudança)',
+  '- Rowena Tsai (autodesenvolvimento, identidade, vida com propósito)',
+  '- For You From Eve (relacionamentos, limites, honestidade sem filtro)',
+  '- Tina Huang (data science, carreira em tech, perspectiva feminina e honesta)',
+  '- Fireship (tech trends, formato dinâmico — referência de ritmo)',
+  '- Theo t3.gg (opiniões fortes, building in public — referência de autenticidade)',
+  '- Ali Abdaal (estrutura e formato de vídeos longos — referência de produção)',
+  '',
+  'PÚBLICO-ALVO: profissionais de TI e devs que sentem que falta algo além do técnico,',
+  'pessoas em transição de carreira para tech, mulheres em tecnologia, curiosos sobre IA',
+  'que querem entender o impacto na vida humana — não só no mercado.'
 ].join('\\n');
 
 const userPrompt = [
   'Data: ' + today,
   '',
-  'Analise as tendências atuais dos canais de referência e do ecossistema de conteúdo sobre',
-  'tecnologia, IA e desenvolvimento pessoal em inglês.',
+  'Gere 5 ideias de vídeo para o canal da Isis Alencastro.',
   '',
-  'Gere 5 ideias de vídeo que Isis poderia criar, adaptando ao seu contexto e perspectiva.',
+  'REGRA PRINCIPAL: desenvolvimento pessoal deve ser o FIO CONDUTOR de cada ideia.',
+  'Tech e IA entram como contexto, gatilho ou ferramenta — nunca como foco exclusivo.',
+  '',
+  'REGRA DE VOZ — CRÍTICA:',
+  'Nenhuma ideia pode soar como "aprenda X comigo" ou "dicas de Y".',
+  'Toda ideia deve soar como "isso aconteceu comigo e mudou algo" ou "estou descobrindo X e quero compartilhar".',
+  'O título deve convidar para uma jornada, não prometer um tutorial.',
+  'Exemplos do que EVITAR: "Como fazer X", "5 dicas para Y", "O guia definitivo de Z"',
+  'Exemplos do que BUSCAR: "O que X me ensinou sobre mim mesma", "Quando percebi que Z mudou tudo",',
+  '"Estou tentando X — o que aprendi até agora", "Por que parei de fazer Y (e o que isso revelou)"',
   '',
   'IDEIAS JÁ EXISTENTES (evitar repetição):',
   existingIdeas.length > 0 ? existingIdeas.join(', ') : 'Nenhuma ideia anterior registrada',
   '',
-  'CRITÉRIOS PARA AS IDEIAS:',
-  '1. Deve estar na interseção de pelo menos 2: tecnologia, IA, desenvolvimento pessoal, carreira',
-  '2. Deve ser adaptável ao contexto de Isis (brasileira, full-stack, gestora de automações)',
-  '3. Deve ter potencial de viralização OU de construção de autoridade',
-  '4. Deve ser viável para produção solo com equipamento básico',
-  '5. Varie entre formatos: tutorial, opinião, storytelling, lista, análise de tendência',
+  'DISTRIBUIÇÃO DAS 5 IDEIAS:',
+  '- 2 ideias com foco em autoconhecimento/identidade/emoções (estilo pearlieee/Nathaniel Drew)',
+  '- 1 ideia sobre a jornada real de carreira — com erros, dúvidas e viradas',
+  '- 1 ideia sobre como Isis usa (ou tenta usar) tech/IA de forma mais consciente',
+  '- 1 ideia livre que conecte qualquer pilar com uma experiência pessoal marcante',
+  '',
+  'CRITÉRIOS PARA CADA IDEIA:',
+  '1. O título deve despertar curiosidade emocional, não apenas informacional',
+  '2. Deve haver um momento real e específico da vida da Isis que ancora o vídeo',
+  '3. O espectador deve sair sentindo algo — não apenas sabendo algo',
+  '4. Deve ser filmável solo com equipamento básico',
+  '5. Formatos preferidos: video-ensaio, storytelling pessoal, reflexão em voz alta, diário em vídeo',
   '',
   'Retorne APENAS JSON válido:',
   '{',
   '  "ideas": [',
   '    {',
-  '      "title_suggestion": "Título em português (chamativo, SEO-friendly)",',
-  '      "original_inspiration": "De qual canal/tendência veio a inspiração",',
-  '      "isis_angle": "Como Isis adapta ao seu contexto específico",',
-  '      "target_audience": "Público-alvo deste vídeo",',
+  '      "title_suggestion": "Título em português (convida para uma jornada, não promete tutorial)",',
+  '      "core_insight": "O insight ou virada central que ancora o vídeo",',
+  '      "isis_real_moment": "Qual momento ou experiência real da Isis serve de base para esse vídeo",',
+  '      "emotional_takeaway": "O que o espectador vai SENTIR ao terminar o vídeo",',
+  '      "original_inspiration": "Qual canal/tendência inspirou o formato ou tema",',
+  '      "target_audience": "Para quem esse vídeo fala especificamente",',
   '      "estimated_length": "Duração estimada",',
-  '      "format": "tutorial|opinião|storytelling|lista|análise",',
-  '      "hook_idea": "Ideia para os primeiros 30 segundos",',
-  '      "viral_potential": "baixo|médio|alto",',
-  '      "authority_building": "baixo|médio|alto",',
+  '      "format": "video-ensaio|storytelling|reflexão|diário-em-vídeo|análise-pessoal",',
+  '      "hook_idea": "Como abrir o vídeo nos primeiros 30 segundos",',
+  '      "viral_potential": "Baixo|Médio|Alto",',
+  '      "authority_building": "Baixo|Médio|Alto",',
   '      "keywords": ["palavra-chave1", "palavra-chave2"]',
   '    }',
   '  ]',
@@ -1274,12 +1313,11 @@ return ideas.map((idea, index) => ({
     {
       parameters: {
         resource: "databasePage",
-        operation: "create",
         databaseId: "={{ $env.NOTION_YOUTUBE_DB_ID }}",
         title: "={{ $json.title }}",
         propertiesUi: {
           propertyValues: [
-            { key: "Status|select", selectValue: "Ideia" },
+            { key: "Status|select", selectValue: "={{ $json.status }}" },
             { key: "Data|date", date: "={{ $json.date }}" },
             { key: "Formato|select", selectValue: "={{ $json.format }}" },
             { key: "Inspiração|rich_text", textContent: "={{ $json.inspiration }}" },
@@ -1293,8 +1331,6 @@ return ideas.map((idea, index) => ({
         blockUi: {
           blockValues: [
             {
-              type: "paragraph",
-              richText: false,
               textContent: "={{ '## Gancho\\n' + $json.hookIdea + '\\n\\n## Ângulo da Isis\\n' + $json.isisAngle + '\\n\\n## Inspiração\\n' + $json.inspiration }}"
             }
           ]
@@ -1313,7 +1349,7 @@ return ideas.map((idea, index) => ({
   ];
 
   const connections = {
-    "Diário às 9h": {
+    "Gerador automático": {
       main: [[{ node: "Notion: Ideias Existentes", type: "main", index: 0 }]]
     },
     "Notion: Ideias Existentes": {
@@ -1331,7 +1367,7 @@ return ideas.map((idea, index) => ({
   };
 
   return {
-    name: "04 - YouTube Monitor (Diário 9h)",
+    name: "Gerador de ideias para vídeos",
     nodes,
     connections,
     active: false,

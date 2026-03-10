@@ -574,7 +574,7 @@ function buildInstagramContent() {
         returnAll: false,
         limit: 1,
         sort: {
-          sortValues: [{ key: "created_time", value: "descending" }]
+          sortValue: [{ key: "created_time", direction: "descending", timestamp: true }]
         },
         options: {}
       },
@@ -839,7 +839,7 @@ function buildLinkedInContent() {
         returnAll: false,
         limit: 1,
         sort: {
-          sortValues: [{ key: "created_time", value: "descending" }]
+          sortValue: [{ key: "created_time", direction: "descending", timestamp: true }]
         },
         options: {}
       },
@@ -1403,18 +1403,18 @@ function buildYouTubeScriptwriter() {
         returnAll: false,
         limit: 10,
         filterType: "manual",
+        matchType: "allFilters",
         filters: {
           conditions: [
             {
               key: "Status|select",
-              condition: "equal",
+              condition: "equals",
               selectValue: "Aprovada"
             }
-          ],
-          combinator: "and"
+          ]
         },
         sort: {
-          sortValues: [{ key: "created_time", value: "descending" }]
+          sortValue: [{ key: "created_time", direction: "descending", timestamp: true }]
         },
         options: {}
       },

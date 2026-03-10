@@ -1,0 +1,245 @@
+{
+  "name": "04 - YouTube Monitor (Diário 9h)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-youtube",
+      "name": "Diário às 9h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": "={{ $env.NOTION_YOUTUBE_DB_ID }}",
+        "returnAll": false,
+        "limit": 50,
+        "options": {}
+      },
+      "id": "notion-get-yt-ideas",
+      "name": "Notion: Ideias Existentes",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        500,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-cred",
+          "name": "Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const existingIdeas = [];\nfor (const item of items) {\n  const props = item.json.properties || {};\n  const title = props.Name?.title?.[0]?.plain_text;\n  if (title) existingIdeas.push(title);\n}\n\nconst today = new Date().toLocaleDateString('pt-BR');\n\nconst systemPrompt = [\n  'Você é um assistente de pesquisa e estrategista de conteúdo para a criadora Isis Alencastro.',\n  'Isis é gestora de automações, desenvolvedora full-stack e analista de marketing.',\n  'Ela cria conteúdo no YouTube sobre tecnologia, IA e desenvolvimento pessoal.',\n  '',\n  'CANAIS DE REFERÊNCIA QUE INSPIRAM ISIS (em inglês):',\n  '- Ali Abdaal (produtividade, vida de creator)',\n  '- Thomas Frank (produtividade, sistemas, Notion)',\n  '- Matt D\\'Avella (minimalismo, hábitos, documentários)',\n  '- Fireship (desenvolvimento, tech trends, formato rápido)',\n  '- Theo (t3.gg - web dev, opiniões fortes)',\n  '- NetworkChuck (TI, cloud, networking)',\n  '- Tina Huang (data science, carreira em tech)',\n  '- Devin Nash (marketing digital, creator economy)',\n  '',\n  'O DIFERENCIAL DE ISIS: Ela está na interseção entre tech, IA e autodesenvolvimento.',\n  'Mostra a jornada REAL — não vende perfeição, mostra processo.',\n  'Seu público: profissionais de TI, devs, pessoas migrando para tech, curiosos sobre IA.'\n].join('\\n');\n\nconst userPrompt = [\n  'Data: ' + today,\n  '',\n  'Analise as tendências atuais dos canais de referência e do ecossistema de conteúdo sobre',\n  'tecnologia, IA e desenvolvimento pessoal em inglês.',\n  '',\n  'Gere 5 ideias de vídeo que Isis poderia criar, adaptando ao seu contexto e perspectiva.',\n  '',\n  'IDEIAS JÁ EXISTENTES (evitar repetição):',\n  existingIdeas.length > 0 ? existingIdeas.join(', ') : 'Nenhuma ideia anterior registrada',\n  '',\n  'CRITÉRIOS PARA AS IDEIAS:',\n  '1. Deve estar na interseção de pelo menos 2: tecnologia, IA, desenvolvimento pessoal, carreira',\n  '2. Deve ser adaptável ao contexto de Isis (brasileira, full-stack, gestora de automações)',\n  '3. Deve ter potencial de viralização OU de construção de autoridade',\n  '4. Deve ser viável para produção solo com equipamento básico',\n  '5. Varie entre formatos: tutorial, opinião, storytelling, lista, análise de tendência',\n  '',\n  'Retorne APENAS JSON válido:',\n  '{',\n  '  \"ideas\": [',\n  '    {',\n  '      \"title_suggestion\": \"Título em português (chamativo, SEO-friendly)\",',\n  '      \"original_inspiration\": \"De qual canal/tendência veio a inspiração\",',\n  '      \"isis_angle\": \"Como Isis adapta ao seu contexto específico\",',\n  '      \"target_audience\": \"Público-alvo deste vídeo\",',\n  '      \"estimated_length\": \"Duração estimada\",',\n  '      \"format\": \"tutorial|opinião|storytelling|lista|análise\",',\n  '      \"hook_idea\": \"Ideia para os primeiros 30 segundos\",',\n  '      \"viral_potential\": \"baixo|médio|alto\",',\n  '      \"authority_building\": \"baixo|médio|alto\",',\n  '      \"keywords\": [\"palavra-chave1\", \"palavra-chave2\"]',\n  '    }',\n  '  ]',\n  '}'\n].join('\\n');\n\nreturn [{\n  json: {\n    existingIdeas: existingIdeas,\n    requestBody: {\n      model: 'gpt-4o',\n      temperature: 0.85,\n      max_tokens: 5000,\n      response_format: { type: 'json_object' },\n      messages: [\n        { role: 'system', content: systemPrompt },\n        { role: 'user', content: userPrompt }\n      ]\n    }\n  }\n}];"
+      },
+      "id": "code-prepare-yt",
+      "name": "Preparar Prompt: YouTube",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "openai-youtube",
+      "name": "OpenAI: Gerar Ideias YouTube",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-cred",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = items[0].json;\nconst content = response.choices[0].message.content;\nlet ideasData;\ntry {\n  ideasData = JSON.parse(content);\n} catch (e) {\n  const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n  ideasData = jsonMatch ? JSON.parse(jsonMatch[0]) : { ideas: [] };\n}\n\nconst ideas = ideasData.ideas || [];\nconst today = new Date().toISOString().split('T')[0];\n\nreturn ideas.map((idea, index) => ({\n  json: {\n    title: idea.title_suggestion,\n    inspiration: idea.original_inspiration || '',\n    isisAngle: idea.isis_angle || '',\n    targetAudience: idea.target_audience || '',\n    estimatedLength: idea.estimated_length || '',\n    format: idea.format || 'opinião',\n    hookIdea: idea.hook_idea || '',\n    viralPotential: idea.viral_potential || 'médio',\n    authorityBuilding: idea.authority_building || 'médio',\n    keywords: (idea.keywords || []).join(', '),\n    date: today,\n    ideaNumber: index + 1,\n    status: 'Ideia'\n  }\n}));"
+      },
+      "id": "code-parse-yt",
+      "name": "Separar Ideias",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "create",
+        "databaseId": "={{ $env.NOTION_YOUTUBE_DB_ID }}",
+        "title": "={{ $json.title }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Status|select",
+              "selectValue": "Ideia"
+            },
+            {
+              "key": "Data|date",
+              "date": "={{ $json.date }}"
+            },
+            {
+              "key": "Formato|select",
+              "selectValue": "={{ $json.format }}"
+            },
+            {
+              "key": "Inspiração|rich_text",
+              "textContent": "={{ $json.inspiration }}"
+            },
+            {
+              "key": "Ângulo Isis|rich_text",
+              "textContent": "={{ $json.isisAngle }}"
+            },
+            {
+              "key": "Público-alvo|rich_text",
+              "textContent": "={{ $json.targetAudience }}"
+            },
+            {
+              "key": "Duração Estimada|rich_text",
+              "textContent": "={{ $json.estimatedLength }}"
+            },
+            {
+              "key": "Potencial Viral|select",
+              "selectValue": "={{ $json.viralPotential }}"
+            },
+            {
+              "key": "Keywords|rich_text",
+              "textContent": "={{ $json.keywords }}"
+            }
+          ]
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "type": "paragraph",
+              "richText": false,
+              "textContent": "={{ '## Gancho\\n' + $json.hookIdea + '\\n\\n## Ângulo da Isis\\n' + $json.isisAngle + '\\n\\n## Inspiração\\n' + $json.inspiration }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notion-save-yt",
+      "name": "Notion: Salvar Ideia YouTube",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1500,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-cred",
+          "name": "Notion"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Diário às 9h": {
+      "main": [
+        [
+          {
+            "node": "Notion: Ideias Existentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion: Ideias Existentes": {
+      "main": [
+        [
+          {
+            "node": "Preparar Prompt: YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Prompt: YouTube": {
+      "main": [
+        [
+          {
+            "node": "OpenAI: Gerar Ideias YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI: Gerar Ideias YouTube": {
+      "main": [
+        [
+          {
+            "node": "Separar Ideias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separar Ideias": {
+      "main": [
+        [
+          {
+            "node": "Notion: Salvar Ideia YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "youtube"
+    },
+    {
+      "name": "automação"
+    }
+  ],
+  "pinData": {}
+}

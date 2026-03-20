@@ -1,6 +1,6 @@
-# Guia de Setup — Notion Databases
+# Guia de Setup — Notion Database para YouTube
 
-Guia detalhado para configurar os 4 databases do Notion necessários para o sistema de automação.
+Guia para configurar o database do Notion usado pelo workflow principal de YouTube. Os databases complementares (Newsletter, Instagram, LinkedIn) seguem no final.
 
 ## Pré-requisitos
 
@@ -12,124 +12,151 @@ Guia detalhado para configurar os 4 databases do Notion necessários para o sist
 
 1. Acesse [notion.so/my-integrations](https://www.notion.so/my-integrations)
 2. Clique em **"+ New integration"**
-3. Nome: `IBA Automação`
+3. Nome: escolha um nome descritivo (ex: `Minha Notion API`)
 4. Workspace: selecione seu workspace
 5. Capabilities: marque **Read content**, **Update content**, **Insert content**
 6. Clique em **Submit**
 7. Copie o **Internal Integration Secret** (começa com `ntn_` ou `secret_`)
 
-## Passo 2: Criar os Databases
+## Passo 2: Criar o Database de YouTube
 
-Crie uma página principal chamada **"Hub de Conteúdo"** e dentro dela crie os 4 databases:
+Crie uma página chamada **"Hub de Conteúdo"** e dentro dela crie um **Full page database** com as seguintes propriedades:
 
-### Database 1: Newsletter
-
-Crie um **Full page database** com as seguintes propriedades:
+### Database: YouTube (Principal)
 
 | Propriedade | Tipo | Configuração |
 |------------|------|--------------|
-| Name | Title | (padrão) |
-| Status | Select | Opções: `Revisar` (amarelo), `Publicado` (verde) |
-| Data | Date | — |
-| Topics | Multi-select | Deixe vazio (preenchido automaticamente) |
+| Name | Title | (padrão) — título da ideia/vídeo |
+| Status | Select | `Ideia` (cinza), `Aprovada` (azul), `Roteirizada` (roxo), `Filmada` (laranja), `Publicada` (verde) |
+| Data | Date | Data de criação da ideia |
+| Formato | Select | `video-ensaio`, `storytelling`, `reflexão`, `diário-em-vídeo`, `análise-pessoal` |
+| Inspiração | Rich Text | Canal ou tendência que inspirou |
+| Ângulo Isis | Rich Text | Perspectiva pessoal da Isis |
+| Público-alvo | Rich Text | Audiência específica do vídeo |
+| Duração Estimada | Rich Text | Tempo estimado do vídeo |
+| Potencial Viral | Select | `Baixo`, `Médio`, `Alto` |
+| Keywords | Rich Text | Palavras-chave separadas por vírgula |
+| Opções de Título | Rich Text | Alternativas de título para A/B test (preenchido pelo roteirizador) |
+| Tags YouTube | Rich Text | Tags para YouTube (preenchido pelo roteirizador) |
 
-### Database 2: Instagram
+### Como o workflow usa cada propriedade
 
-| Propriedade | Tipo | Configuração |
-|------------|------|--------------|
-| Name | Title | (padrão) |
-| Status | Select | Opções: `Revisar` (amarelo), `Aprovado` (azul), `Publicado` (verde) |
-| Data | Date | — |
-| Formato | Select | Opções: `carousel`, `single`, `breaking` |
-| Hashtags | Rich Text | — |
-| CTA | Rich Text | — |
-| Visual JSON | Rich Text | — |
+**Preenchidas pelo Gerador de Ideias:**
+- Name, Status (`Ideia`), Data, Formato, Inspiração, Ângulo Isis, Público-alvo, Duração Estimada, Potencial Viral, Keywords
 
-### Database 3: LinkedIn
+**Preenchidas pelo Roteirizador (quando status = `Aprovada`):**
+- Status (atualiza para `Roteirizada`), Opções de Título, Tags YouTube, Duração Estimada (refinada)
+- O roteiro completo é adicionado como conteúdo no corpo da página
 
-| Propriedade | Tipo | Configuração |
-|------------|------|--------------|
-| Name | Title | (padrão) |
-| Status | Select | Opções: `Revisar` (amarelo), `Aprovado` (azul), `Publicado` (verde) |
-| Data | Date | — |
-| Hashtags | Rich Text | — |
-| Image Prompt | Rich Text | — |
-| Caracteres | Number | Formato: Number |
-| Estratégia | Rich Text | — |
+**Preenchidas manualmente por Isis:**
+- Status `Aprovada` (trigger para roteirizar), `Filmada`, `Publicada`
 
-### Database 4: YouTube
-
-| Propriedade | Tipo | Configuração |
-|------------|------|--------------|
-| Name | Title | (padrão) |
-| Status | Select | Opções: `Ideia` (cinza), `Aprovada` (azul), `Roteirizada` (roxo), `Filmada` (laranja), `Publicada` (verde) |
-| Data | Date | — |
-| Formato | Select | Opções: `video-ensaio`, `storytelling`, `reflexão`, `diário-em-vídeo`, `análise-pessoal` |
-| Inspiração | Rich Text | — |
-| Ângulo Isis | Rich Text | — |
-| Público-alvo | Rich Text | — |
-| Duração Estimada | Rich Text | — |
-| Potencial Viral | Select | Opções: `Baixo`, `Médio`, `Alto` |
-| Keywords | Rich Text | — |
-| Opções de Título | Rich Text | — |
-| Tags YouTube | Rich Text | — |
-
-## Passo 3: Conectar a Integration
-
-Para **cada** database:
+## Passo 3: Conectar a Integration ao Database
 
 1. Abra o database em página inteira
 2. Clique nos **3 pontinhos** (⋯) no canto superior direito
 3. Clique em **"Connections"** → **"Connect to"**
-4. Busque e selecione **"IBA Automação"**
+4. Busque e selecione a Integration que você criou
 5. Confirme
 
-## Passo 4: Obter os Database IDs
-
-Para cada database:
+## Passo 4: Obter o Database ID
 
 1. Abra o database em página inteira no navegador
 2. A URL terá o formato: `https://www.notion.so/workspace/DATABASE_ID?v=...`
 3. O DATABASE_ID são os 32 caracteres hexadecimais na URL
-4. Copie e formate como UUID: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
+4. Formate como UUID: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
 
-Use esses IDs nas variáveis de ambiente do N8N.
+Configure o ID como variável de ambiente `NOTION_YOUTUBE_DB_ID` no N8N (Settings → Variables). O workflow já referencia essa variável automaticamente nos nodes:
 
-## Passo 5: Criar Views (Opcional mas Recomendado)
+- `Notion: Ideias Existentes`
+- `Notion: Salvar Ideia YouTube`
+- `Preparar Query Notion`
 
-### Newsletter — Views sugeridas
+## Passo 5: Views Recomendadas
 
-- **Todas**: Table view sem filtro
-- **Para Revisar**: Table view filtrada por Status = "Revisar"
-- **Calendário**: Calendar view pela propriedade Data
+### Pipeline (Board View) — Principal
 
-### Instagram — Views sugeridas
+Agrupe por **Status**. Cada coluna representa um estágio:
 
-- **Para Revisar**: Table view filtrada por Status = "Revisar"
-- **Galeria**: Gallery view para preview visual
-- **Por Formato**: Table view agrupada por Formato
+```
+┌──────────┬──────────┬──────────────┬──────────┬───────────┐
+│  Ideia   │ Aprovada │ Roteirizada  │ Filmada  │ Publicada │
+│          │          │              │          │           │
+│  ○ ○ ○   │  ○ ○     │    ○ ○       │   ○      │   ○ ○ ○   │
+│  ○ ○     │          │              │          │           │
+└──────────┴──────────┴──────────────┴──────────┴───────────┘
+```
 
-### LinkedIn — Views sugeridas
+### Ideias Novas (Table View)
 
-- **Para Revisar**: Table view filtrada por Status = "Revisar"
-- **Calendário**: Calendar view pela propriedade Data
+- Filtro: Status = `Ideia`
+- Ordenação: Data (mais recente primeiro)
+- Colunas visíveis: Name, Formato, Potencial Viral, Público-alvo, Keywords
 
-### YouTube — Views sugeridas
+### Para Roteirizar (Table View)
 
-- **Pipeline**: Board view agrupada por Status
-- **Ideias Novas**: Table view filtrada por Status = "Ideia"
-- **Aprovadas**: Table view filtrada por Status = "Aprovada"
+- Filtro: Status = `Aprovada`
+- Mostra ideias aguardando o roteirizador automático
 
-## Dicas de Workflow no Notion
+### Calendário (Calendar View)
 
-1. **Revise diariamente**: Abra a view "Para Revisar" de cada database
-2. **Instagram**: Revise o copy, ajuste o visual no Figma usando o Visual JSON, publique
-3. **LinkedIn**: Revise o texto, gere a imagem usando o Image Prompt, publique
-4. **YouTube**: Mude status para "Aprovada" quando quiser roteirizar → trigger o workflow 05
-5. **Newsletter**: Revise no Notion, depois publique no Beehiiv
+- Por propriedade Data
+- Visão geral de quando cada ideia foi gerada
 
-## Automação do Status no Notion
+## Fluxo de Trabalho no Notion
 
-Para facilitar, configure automações nativas do Notion:
-- Quando uma página é criada → setar Data para hoje (se não preenchida)
-- Quando Status muda para "Publicado" → adicionar data de publicação
+1. **Gerador roda** → 5 ideias aparecem com status `Ideia`
+2. **Isis revisa** na view "Ideias Novas"
+3. **Isis muda status** para `Aprovada` nas ideias que quer roteirizar
+4. **Roteirizador detecta** (em até 30 min) e gera o roteiro completo
+5. **Status muda** automaticamente para `Roteirizada`
+6. **Isis abre a página** e encontra o roteiro com marcações de produção
+7. **Isis filma** e muda status para `Filmada`
+8. **Isis publica** e muda status para `Publicada`
+
+---
+
+## Databases Complementares
+
+### Database: Newsletter
+
+| Propriedade | Tipo | Configuração |
+|------------|------|--------------|
+| Name | Title | Título da edição |
+| Status | Select | `Revisar`, `Aguardando Aprovação`, `Publicado` |
+| Data | Date | Data da edição |
+| Topics | Multi-select | Tópicos cobertos (preenchido automaticamente) |
+
+### Database: Instagram
+
+| Propriedade | Tipo | Configuração |
+|------------|------|--------------|
+| Name | Title | Hook/título do post |
+| Status | Select | `Revisar`, `Aprovado`, `Publicado` |
+| Data | Date | Data do post |
+| Formato | Select | `carousel`, `single`, `breaking` |
+| Hashtags | Rich Text | Hashtags do post |
+| CTA | Rich Text | Call to action |
+| Visual JSON | Rich Text | Instruções visuais para design |
+
+### Database: LinkedIn
+
+| Propriedade | Tipo | Configuração |
+|------------|------|--------------|
+| Name | Title | Hook do post |
+| Status | Select | `Revisar`, `Aprovado`, `Publicado` |
+| Data | Date | Data do post |
+| Hashtags | Rich Text | Hashtags |
+| Image Prompt | Rich Text | Prompt para geração de imagem |
+| Caracteres | Number | Contagem de caracteres |
+| Estratégia | Rich Text | Estratégia de engajamento |
+
+Para os workflows complementares (01–03), configure as variáveis de ambiente no N8N:
+
+| Variável | Database |
+|----------|----------|
+| `NOTION_NEWSLETTER_DB_ID` | Newsletter |
+| `NOTION_INSTAGRAM_DB_ID` | Instagram |
+| `NOTION_LINKEDIN_DB_ID` | LinkedIn |
+| `NOTION_YOUTUBE_DB_ID` | YouTube |
+| `BEEHIIV_PUBLICATION_ID` | ID da publicação no Beehiiv |

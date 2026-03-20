@@ -1,0 +1,485 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "={{ $env.NOTION_YOUTUBE_DB_ID }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "ad5ce790-2da6-4cb0-9dcf-2308456eb107",
+      "name": "Notion: Ideias Existentes",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [208, 0],
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const existingIdeas = [];\nfor (const item of items) {\n  const props = item.json.properties || {};\n  const title = props.Name?.title?.[0]?.plain_text;\n  if (title) existingIdeas.push(title);\n}\nconst today = new Date().toLocaleDateString('pt-BR');\n\nconst systemPrompt = [\n  'Você é um assistente de estratégia de conteúdo para a criadora Isis Alencastro.',\n  'Isis é gestora de automações, desenvolvedora full-stack e analista de marketing.',\n  'Ela está construindo um canal no YouTube na interseção entre tecnologia, IA e desenvolvimento pessoal.',\n  '',\n  'FILOSOFIA CENTRAL DO CANAL — LEIA COM ATENÇÃO:',\n  'Isis NÃO é expert dando dicas. Isis é uma pessoa em evolução documentando sua jornada.',\n  'A diferença é fundamental:',\n  '- Expert diz \"faça assim\" → Isis diz \"eu tentei isso e aprendi tal coisa\"',\n  '- Expert ensina de cima → Isis caminha junto com o espectador',\n  '- Expert tem respostas → Isis tem perguntas honestas e descobertas reais',\n  'O canal é um diário público de crescimento — profissional E pessoal.',\n  'O espectador não sai com um tutorial. Sai sentindo que não está sozinho.',\n  '',\n  'POSICIONAMENTO CENTRAL DE ISIS:',\n  'Ela usa tecnologia como ferramenta de autoconhecimento, produtividade consciente',\n  'e construção de vida com propósito. Mostra a jornada REAL: acertos, erros, crises e viradas.',\n  'O tech é o contexto. O desenvolvimento pessoal é o coração do canal.',\n  '',\n  'PILARES DE CONTEÚDO (em ordem de prioridade):',\n  '1. EVOLUÇÃO DOCUMENTADA — mostrar quem ela era, quem está se tornando, o que mudou',\n  '2. AUTOCONHECIMENTO na jornada em tecnologia — o que aprender revela sobre si mesma',\n  '3. DESENVOLVIMENTO PESSOAL aplicado à vida de quem trabalha com tech',\n  '   — identidade profissional, síndrome do impostor, burnout, limites, propósito',\n  '4. PRODUTIVIDADE CONSCIENTE — sistemas que respeitam a vida, não apenas otimizam',\n  '5. IA & TECH como gatilho de reflexão pessoal — não como tema técnico isolado',\n  '',\n  'CANAIS DE REFERÊNCIA:',\n  '- pearlieee (video-ensaios intimistas, psicologia, autoconhecimento e healing com tom pessoal)',\n  '- Nathaniel Drew (video-ensaios introspectivos sobre identidade e mudança)',\n  '- Rowena Tsai (autodesenvolvimento, identidade, vida com propósito)',\n  '- For You From Eve (relacionamentos, limites, honestidade sem filtro)',\n  '- Tina Huang (data science, carreira em tech, perspectiva feminina e honesta)',\n  '- Fireship (tech trends, formato dinâmico — referência de ritmo)',\n  '- Theo t3.gg (opiniões fortes, building in public — referência de autenticidade)',\n  '- Ali Abdaal (estrutura e formato de vídeos longos — referência de produção)',\n  '',\n  'PÚBLICO-ALVO: profissionais de TI e devs que sentem que falta algo além do técnico,',\n  'pessoas em transição de carreira para tech, mulheres em tecnologia, curiosos sobre IA',\n  'que querem entender o impacto na vida humana — não só no mercado.'\n].join('\\n');\n\nconst userPrompt = [\n  'Data: ' + today,\n  '',\n  'Gere 5 ideias de vídeo para o canal da Isis Alencastro.',\n  '',\n  'REGRA PRINCIPAL: desenvolvimento pessoal deve ser o FIO CONDUTOR de cada ideia.',\n  'Tech e IA entram como contexto, gatilho ou ferramenta — nunca como foco exclusivo.',\n  '',\n  'REGRA DE VOZ — CRÍTICA:',\n  'Nenhuma ideia pode soar como \"aprenda X comigo\" ou \"dicas de Y\".',\n  'Toda ideia deve soar como \"isso aconteceu comigo e mudou algo\" ou \"estou descobrindo X e quero compartilhar\".',\n  'O título deve convidar para uma jornada, não prometer um tutorial.',\n  'Exemplos do que EVITAR: \"Como fazer X\", \"5 dicas para Y\", \"O guia definitivo de Z\"',\n  'Exemplos do que BUSCAR: \"O que X me ensinou sobre mim mesma\", \"Quando percebi que Z mudou tudo\",',\n  '\"Estou tentando X — o que aprendi até agora\", \"Por que parei de fazer Y (e o que isso revelou)\"',\n  '',\n  'IDEIAS JÁ EXISTENTES (evitar repetição):',\n  existingIdeas.length > 0 ? existingIdeas.join(', ') : 'Nenhuma ideia anterior registrada',\n  '',\n  'DISTRIBUIÇÃO DAS 5 IDEIAS:',\n  '- 2 ideias com foco em autoconhecimento/identidade/emoções (estilo pearlieee/Nathaniel Drew)',\n  '- 1 ideia sobre a jornada real de carreira — com erros, dúvidas e viradas',\n  '- 1 ideia sobre como Isis usa (ou tenta usar) tech/IA de forma mais consciente',\n  '- 1 ideia livre que conecte qualquer pilar com uma experiência pessoal marcante',\n  '',\n  'CRITÉRIOS PARA CADA IDEIA:',\n  '1. O título deve despertar curiosidade emocional, não apenas informacional',\n  '2. Deve haver um momento real e específico da vida da Isis que ancora o vídeo',\n  '3. O espectador deve sair sentindo algo — não apenas sabendo algo',\n  '4. Deve ser filmável solo com equipamento básico',\n  '5. Formatos preferidos: video-ensaio, storytelling pessoal, reflexão em voz alta, diário em vídeo',\n  '',\n  'Retorne APENAS JSON válido:',\n  '{',\n  '  \"ideas\": [',\n  '    {',\n  '      \"title_suggestion\": \"Título em português (convida para uma jornada, não promete tutorial)\",',\n  '      \"core_insight\": \"O insight ou virada central que ancora o vídeo\",',\n  '      \"isis_real_moment\": \"Qual momento ou experiência real da Isis serve de base para esse vídeo\",',\n  '      \"emotional_takeaway\": \"O que o espectador vai SENTIR ao terminar o vídeo\",',\n  '      \"original_inspiration\": \"Qual canal/tendência inspirou o formato ou tema\",',\n  '      \"target_audience\": \"Para quem esse vídeo fala especificamente\",',\n  '      \"estimated_length\": \"Duração estimada\",',\n  '      \"format\": \"video-ensaio|storytelling|reflexão|diário-em-vídeo|análise-pessoal\",',\n  '      \"hook_idea\": \"Como abrir o vídeo nos primeiros 30 segundos\",',\n  '      \"viral_potential\": \"Baixo|Médio|Alto\",',\n  '      \"authority_building\": \"Baixo|Médio|Alto\",',\n  '      \"keywords\": [\"palavra-chave1\", \"palavra-chave2\"]',\n  '    }',\n  '  ]',\n  '}'\n].join('\\n');\n\nreturn [{\n  json: {\n    existingIdeas: existingIdeas,\n    requestBody: {\n      model: 'gpt-4o',\n      temperature: 0.85,\n      max_tokens: 5000,\n      response_format: { type: 'json_object' },\n      messages: [\n        { role: 'system', content: systemPrompt },\n        { role: 'user', content: userPrompt }\n      ]\n    }\n  }\n}];"
+      },
+      "id": "c53326ab-e586-4802-8850-4ae6117d0b87",
+      "name": "Preparar Prompt: YouTube",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [432, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "bd3188e1-3368-4894-948d-71cb0ab07156",
+      "name": "OpenAI: Gerar Ideias YouTube",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [656, 0],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = items[0].json;\nconst content = response.choices[0].message.content;\nlet ideasData;\ntry {\n  ideasData = JSON.parse(content);\n} catch (e) {\n  const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n  ideasData = jsonMatch ? JSON.parse(jsonMatch[0]) : { ideas: [] };\n}\n\nconst ideas = ideasData.ideas || [];\nconst today = new Date().toISOString().split('T')[0];\n\nreturn ideas.map((idea, index) => ({\n  json: {\n    title: idea.title_suggestion,\n    inspiration: idea.original_inspiration || '',\n    isisAngle: idea.core_insight || '',\n    targetAudience: idea.target_audience || '',\n    estimatedLength: idea.estimated_length || '',\n    format: idea.format || 'opinião',\n    hookIdea: idea.hook_idea || '',\n    viralPotential: idea.viral_potential || 'médio',\n    authorityBuilding: idea.authority_building || 'médio',\n    keywords: (idea.keywords || []).join(', '),\n    date: today,\n    ideaNumber: index + 1,\n    status: 'Ideia'\n  }\n}));"
+      },
+      "id": "fa540938-b8a8-416a-b091-7f3fcc9e2145",
+      "name": "Separar Ideias",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "={{ $env.NOTION_YOUTUBE_DB_ID }}",
+          "mode": "id"
+        },
+        "title": "={{ $json.title }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Status|select",
+              "selectValue": "={{ $json.status }}"
+            },
+            {
+              "key": "Data|date",
+              "date": "={{ $json.date }}"
+            },
+            {
+              "key": "Formato|select",
+              "selectValue": "={{ $json.format }}"
+            },
+            {
+              "key": "Inspiração|rich_text",
+              "textContent": "={{ $json.inspiration }}"
+            },
+            {
+              "key": "Ângulo Isis|rich_text",
+              "textContent": "={{ $json.isisAngle }}"
+            },
+            {
+              "key": "Público-alvo|rich_text",
+              "textContent": "={{ $json.targetAudience }}"
+            },
+            {
+              "key": "Duração Estimada|rich_text",
+              "textContent": "={{ $json.estimatedLength }}"
+            },
+            {
+              "key": "Potencial Viral|select",
+              "selectValue": "={{ $json.viralPotential }}"
+            },
+            {
+              "key": "Keywords|rich_text",
+              "textContent": "={{ $json.keywords }}"
+            }
+          ]
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "textContent": "={{ '## Gancho\\n' + $json.hookIdea + '\\n\\n## Ângulo da Isis\\n' + $json.isisAngle + '\\n\\n## Inspiração\\n' + $json.inspiration }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b25ac467-73fb-4020-a349-1f9c131e050a",
+      "name": "Notion: Salvar Ideia YouTube",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1104, 0],
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const dbId = $env.NOTION_YOUTUBE_DB_ID || 'YOUR_DATABASE_ID';\nreturn [{\n  json: {\n    notionDbId: dbId,\n    requestBody: {\n      filter: {\n        property: \"Status\",\n        select: { equals: \"Aprovada\" }\n      },\n      sorts: [{ timestamp: \"created_time\", direction: \"descending\" }],\n      page_size: 10\n    }\n  }\n}];"
+      },
+      "id": "00c60248-78f2-42c1-bdaf-2c3879acee17",
+      "name": "Preparar Query Notion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [208, 224]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.notion.com/v1/databases/{{ $json.notionDbId }}/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {}
+      },
+      "id": "607cac45-6b13-40c0-8dde-9e6cd501d365",
+      "name": "Notion: Buscar Aprovadas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [432, 224],
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = items[0].json.results || [];\nif (results.length === 0) {\n  return [];\n}\nreturn results.map(page => ({ json: page }));"
+      },
+      "id": "26bea98f-5501-48e9-988b-dee5676d88bf",
+      "name": "Tem Ideias Aprovadas?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [656, 224]
+    },
+    {
+      "parameters": {
+        "jsCode": "const idea = items[0].json;\nconst props = idea.properties || {};\nconst title = props.Name?.title?.[0]?.plain_text || 'Ideia de vídeo';\n\nlet ideaDetails = 'Título: ' + title + '\\n';\n\nfor (const [key, val] of Object.entries(props)) {\n  if (val.rich_text && val.rich_text.length > 0) {\n    const text = val.rich_text.map(t => t.plain_text).join('');\n    if (text) ideaDetails += key + ': ' + text + '\\n';\n  }\n  if (val.select && val.select.name) {\n    ideaDetails += key + ': ' + val.select.name + '\\n';\n  }\n}\n\nlet bodyContent = '';\nif (idea.body) bodyContent = idea.body;\nif (idea.content) bodyContent = idea.content;\n\nconst systemPrompt = [\n  'Você é roteirista da criadora de conteúdo Isis Alencastro para YouTube.',\n  'Isis é gestora de automações, desenvolvedora full-stack e analista de marketing.',\n  'Ela fala sobre tecnologia, IA e desenvolvimento pessoal com autenticidade.',\n  '',\n  'ESTILO DE ROTEIRO:',\n  '- Conversacional — como se Isis estivesse falando diretamente com um amigo',\n  '- Dinâmico — mudanças de ritmo, perguntas retóricas, hooks visuais',\n  '- Pessoal — marcações claras onde Isis deve inserir histórias pessoais',\n  '- Profissional — conteúdo denso mas acessível',\n  '',\n  'MARCAÇÕES ESPECIAIS NO ROTEIRO:',\n  '- [INSERIR HISTÓRIA PESSOAL: sugestão do que contar] — onde Isis adiciona vivências próprias',\n  '- [NOTA DE PRODUÇÃO: descrição] — sugestões de B-roll, gráficos, transições, zoom',\n  '- [GANCHO VISUAL: descrição] — momentos que precisam de destaque visual',\n  '- [PAUSA DRAMÁTICA] — momentos de silêncio intencional',\n  '- [MUDANÇA DE ENERGIA] — quando o tom deve mudar'\n].join('\\n');\n\nconst userPrompt = [\n  'IDEIA DO VÍDEO:',\n  ideaDetails,\n  '',\n  bodyContent ? 'DETALHES ADICIONAIS:\\n' + bodyContent + '\\n' : '',\n  'Crie um MINI ROTEIRO COMPLETO para este vídeo.',\n  '',\n  'ESTRUTURA OBRIGATÓRIA:',\n  '',\n  '1. GANCHO (0:00-0:30)',\n  '   Primeiros 30 segundos que prendem o espectador.',\n  '   Deve criar curiosidade imediata, usar dado impactante ou pergunta provocativa.',\n  '   [NOTA DE PRODUÇÃO] com sugestão de como filmar.',\n  '',\n  '2. INTRO (0:30-1:30)',\n  '   Contexto e promessa clara do que o vídeo entrega.',\n  '   Isis se apresenta brevemente e estabelece credibilidade.',\n  '   [INSERIR HISTÓRIA PESSOAL] — por que esse tema importa para ela.',\n  '',\n  '3. DESENVOLVIMENTO (1:30-8:00)',\n  '   3-4 blocos de conteúdo, cada um com:',\n  '   - Subtítulo do bloco',\n  '   - Conteúdo principal (falas da Isis)',\n  '   - [INSERIR HISTÓRIA PESSOAL] em pelo menos 2 blocos',\n  '   - [NOTA DE PRODUÇÃO] com sugestões de B-roll e gráficos',\n  '   - Transição natural para o próximo bloco',\n  '',\n  '4. CLÍMAX (8:00-9:00)',\n  '   O insight principal ou virada do vídeo.',\n  '   O momento \"aha\" que faz tudo se conectar.',\n  '',\n  '5. CTA (9:00-9:30)',\n  '   Chamada para ação: inscrever no canal, assinar a newsletter AI Pulse, comentar.',\n  '   Deve sentir natural, não forçado.',\n  '',\n  '6. ENCERRAMENTO (9:30-10:00)',\n  '   Despedida pessoal, prévia do próximo vídeo.',\n  '',\n  'ADICIONAL — Forneça também:',\n  '- 3 opções de título para teste A/B (SEO-friendly, chamativo)',\n  '- 3 sugestões de thumbnail (descrição visual detalhada)',\n  '- Tags sugeridas para YouTube (10-15 tags)',\n  '- Descrição sugerida para o vídeo (com links e timestamps)',\n  '',\n  'Retorne APENAS JSON válido:',\n  '{',\n  '  \"script\": {',\n  '    \"hook\": \"Texto completo do gancho com marcações\",',\n  '    \"intro\": \"Texto completo da intro com marcações\",',\n  '    \"development\": [',\n  '      {',\n  '        \"block_title\": \"Título do bloco\",',\n  '        \"content\": \"Texto completo com marcações\",',\n  '        \"production_notes\": \"Notas de produção para este bloco\"',\n  '      }',\n  '    ],',\n  '    \"climax\": \"Texto do clímax com marcações\",',\n  '    \"cta\": \"Texto do CTA\",',\n  '    \"closing\": \"Texto do encerramento\"',\n  '  },',\n  '  \"title_options\": [\"Título 1\", \"Título 2\", \"Título 3\"],',\n  '  \"thumbnail_suggestions\": [',\n  '    { \"description\": \"Descrição visual da thumbnail\", \"text_overlay\": \"Texto na thumbnail\" }',\n  '  ],',\n  '  \"youtube_tags\": [\"tag1\", \"tag2\"],',\n  '  \"video_description\": \"Descrição completa com timestamps\",',\n  '  \"estimated_duration\": \"duração estimada\"',\n  '}'\n].join('\\n');\n\nreturn [{\n  json: {\n    ideaTitle: title,\n    ideaPageId: idea.id,\n    requestBody: {\n      model: 'gpt-4o',\n      temperature: 0.75,\n      max_tokens: 10000,\n      response_format: { type: 'json_object' },\n      messages: [\n        { role: 'system', content: systemPrompt },\n        { role: 'user', content: userPrompt }\n      ]\n    }\n  }\n}];"
+      },
+      "id": "23a179f1-b6f4-4bd4-80c9-629c93918a35",
+      "name": "Preparar Prompt: Roteiro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 224]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {}
+      },
+      "id": "ff4cd1b9-77f7-4475-a74e-256d21465577",
+      "name": "OpenAI: Gerar Roteiro",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1104, 224],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [-16, 224],
+      "id": "d3c11474-6401-4f96-826b-6cdc9a274acc",
+      "name": "Verificar aprovados"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/blocks/{{ $('Formatar Roteiro').item.json.ideaPageId }}/children",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Formatar Roteiro').item.json.notionBlocks) }}",
+        "options": {}
+      },
+      "id": "11678a7e-601b-416f-903c-fd5c7888c74d",
+      "name": "Notion: Adicionar Roteiro na Página",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1776, 224],
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/pages/{{ $json.ideaPageId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.notionProperties) }}",
+        "options": {}
+      },
+      "id": "ea73c4ac-7cae-4594-babc-a24ba46ffb11",
+      "name": "Notion: Atualizar com Roteiro",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1552, 224],
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = items[0].json;\nconst content = response.choices[0].message.content;\n\nconst ideaTitle = $('Preparar Prompt: Roteiro').item.json.ideaTitle;\nconst ideaPageId = $('Preparar Prompt: Roteiro').item.json.ideaPageId;\nconst today = new Date().toISOString().split('T')[0];\n\nlet scriptData;\ntry {\n  scriptData = JSON.parse(content);\n} catch (e) {\n  const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n  scriptData = jsonMatch ? JSON.parse(jsonMatch[0]) : {};\n}\n\nconst script = scriptData.script || {};\n\nlet fullScript = '# ROTEIRO\\n\\n';\nfullScript += '## GANCHO (0:00-0:30)\\n' + (script.hook || '') + '\\n\\n';\nfullScript += '## INTRO (0:30-1:30)\\n' + (script.intro || '') + '\\n\\n';\n\nif (script.development) {\n  fullScript += '## DESENVOLVIMENTO\\n\\n';\n  script.development.forEach((block, i) => {\n    fullScript += '### Bloco ' + (i + 1) + ': ' + block.block_title + '\\n';\n    fullScript += block.content + '\\n';\n    if (block.production_notes) {\n      fullScript += '\\n[NOTA DE PRODUÇÃO] ' + block.production_notes + '\\n';\n    }\n    fullScript += '\\n';\n  });\n}\n\nfullScript += '## CLÍMAX\\n' + (script.climax || '') + '\\n\\n';\nfullScript += '## CTA\\n' + (script.cta || '') + '\\n\\n';\nfullScript += '## ENCERRAMENTO\\n' + (script.closing || '') + '\\n\\n';\nfullScript += '---\\n\\n## OPÇÕES DE TÍTULO\\n';\n(scriptData.title_options || []).forEach((t, i) => {\n  fullScript += (i + 1) + '. ' + t + '\\n';\n});\nfullScript += '\\n## SUGESTÕES DE THUMBNAIL\\n';\n(scriptData.thumbnail_suggestions || []).forEach((t, i) => {\n  fullScript += (i + 1) + '. ' + t.description + ' | Texto: ' + (t.text_overlay || '') + '\\n';\n});\nfullScript += '\\n## TAGS\\n' + (scriptData.youtube_tags || []).join(', ');\nfullScript += '\\n\\n## DESCRIÇÃO DO VÍDEO\\n' + (scriptData.video_description || '');\n\nconst chunks = [];\nlet remaining = fullScript;\nwhile (remaining.length > 0) {\n  chunks.push(remaining.substring(0, 2000));\n  remaining = remaining.substring(2000);\n}\n\nreturn [{\n  json: {\n    ideaTitle,\n    ideaPageId,\n    fullScript,\n    notionProperties: {\n      properties: {\n        \"Status\": { select: { name: \"Roteirizada\" } },\n        \"Opções de Título\": { rich_text: [{ text: { content: (scriptData.title_options || []).join(' | ') } }] },\n        \"Tags YouTube\": { rich_text: [{ text: { content: (scriptData.youtube_tags || []).join(', ') } }] },\n        \"Duração Estimada\": { rich_text: [{ text: { content: scriptData.estimated_duration || '' } }] }\n      }\n    },\n    notionBlocks: {\n      children: chunks.map(chunk => ({\n        object: \"block\",\n        type: \"paragraph\",\n        paragraph: {\n          rich_text: [{ type: \"text\", text: { content: chunk } }]\n        }\n      }))\n    },\n    date: today\n  }\n}];"
+      },
+      "id": "17c672f2-2206-4b7f-a397-8fd1b5093ee0",
+      "name": "Formatar Roteiro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1328, 224]
+    },
+    {
+      "parameters": {
+        "path": "youtube-content-generator",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-16, 0],
+      "id": "9837b2c9-d62f-4fa2-88f5-3c55bffc24f1",
+      "name": "Webhook",
+      "webhookId": "youtube-content-generator"
+    }
+  ],
+  "connections": {
+    "Notion: Ideias Existentes": {
+      "main": [
+        [
+          {
+            "node": "Preparar Prompt: YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Prompt: YouTube": {
+      "main": [
+        [
+          {
+            "node": "OpenAI: Gerar Ideias YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI: Gerar Ideias YouTube": {
+      "main": [
+        [
+          {
+            "node": "Separar Ideias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separar Ideias": {
+      "main": [
+        [
+          {
+            "node": "Notion: Salvar Ideia YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Query Notion": {
+      "main": [
+        [
+          {
+            "node": "Notion: Buscar Aprovadas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion: Buscar Aprovadas": {
+      "main": [
+        [
+          {
+            "node": "Tem Ideias Aprovadas?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem Ideias Aprovadas?": {
+      "main": [
+        [
+          {
+            "node": "Preparar Prompt: Roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Prompt: Roteiro": {
+      "main": [
+        [
+          {
+            "node": "OpenAI: Gerar Roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI: Gerar Roteiro": {
+      "main": [
+        [
+          {
+            "node": "Formatar Roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar aprovados": {
+      "main": [
+        [
+          {
+            "node": "Preparar Query Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion: Adicionar Roteiro na Página": {
+      "main": [
+        []
+      ]
+    },
+    "Notion: Atualizar com Roteiro": {
+      "main": [
+        [
+          {
+            "node": "Notion: Adicionar Roteiro na Página",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Roteiro": {
+      "main": [
+        [
+          {
+            "node": "Notion: Atualizar com Roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Notion: Ideias Existentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": ""
+  }
+}

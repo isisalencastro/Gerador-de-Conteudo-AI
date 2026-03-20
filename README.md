@@ -1,46 +1,33 @@
-# Gerador de Conteúdo AI — Isis Alencastro
+# Gerador de Conteudo AI
 
-Sistema de automação de conteúdo para o canal de YouTube e presença digital de **Isis Alencastro**, usando **N8N**, **OpenAI (GPT-4o)** e **Notion** como hub central.
+Sistema de automacao de conteudo para YouTube usando **N8N**, **OpenAI (GPT-4o)** e **Notion** como hub central. Gera ideias de video alinhadas com a estrategia editorial do creator e transforma ideias aprovadas em roteiros completos — tudo de forma automatica.
 
-A IA pesquisa, estrutura e rascunha. Isis revisa, personaliza e publica. O sistema não substitui criatividade — elimina o trabalho pesado.
+A IA pesquisa, estrutura e rascunha. O creator revisa, personaliza e publica. O sistema nao substitui criatividade — elimina o trabalho pesado.
 
-## A Ideia Central
+## O Problema
 
-Isis está construindo um canal no YouTube na interseção entre **tecnologia, IA e desenvolvimento pessoal**. A proposta não é ser mais uma expert dando dicas — é documentar uma jornada real de crescimento.
+Creators de video enfrentam um ciclo repetitivo: pensar em ideias, validar contra o posicionamento do canal, escrever roteiros, preparar metadata para publicacao. Esse trabalho operacional consome horas que poderiam ser investidas em gravacao e conexao com a audiencia.
 
-O workflow principal (`youtube-content.json`) é o coração deste repositório: ele gera ideias de vídeo alinhadas com a filosofia do canal e transforma ideias aprovadas em roteiros completos, tudo de forma automática via N8N + GPT-4o + Notion.
+## A Solucao
 
-### Filosofia do Canal
+Um workflow automatizado que:
 
-```
-Isis NÃO é expert dando dicas.
-Isis é uma pessoa em evolução documentando sua jornada.
+1. **Gera ideias** alinhadas com a filosofia, pilares de conteudo e voz do canal
+2. **Evita repeticao** consultando ideias ja existentes no Notion
+3. **Roteiriza automaticamente** ideias aprovadas pelo creator
+4. **Entrega roteiros completos** com marcacoes de producao, sugestoes de thumbnail, tags e descricao
 
-- Expert diz "faça assim"      → Isis diz "eu tentei isso e aprendi tal coisa"
-- Expert ensina de cima         → Isis caminha junto com o espectador
-- Expert tem respostas          → Isis tem perguntas honestas e descobertas reais
+O creator mantem controle criativo total: a IA so avanca quando uma ideia recebe status "Aprovada" manualmente.
 
-O canal é um diário público de crescimento — profissional E pessoal.
-O espectador não sai com um tutorial. Sai sentindo que não está sozinho.
-```
-
-### Pilares de Conteúdo (em ordem de prioridade)
-
-1. **Evolução Documentada** — mostrar quem ela era, quem está se tornando, o que mudou
-2. **Autoconhecimento na jornada em tech** — o que aprender revela sobre si mesma
-3. **Desenvolvimento Pessoal aplicado à tech** — identidade profissional, síndrome do impostor, burnout, limites, propósito
-4. **Produtividade Consciente** — sistemas que respeitam a vida, não apenas otimizam
-5. **IA & Tech como gatilho de reflexão** — não como tema técnico isolado
-
-## Arquitetura do Sistema
+## Como Funciona
 
 ```
                     ┌─────────────────────────────────────────────┐
-                    │          YOUTUBE (Workflow Principal)         │
+                    │         WORKFLOW PRINCIPAL (YouTube)          │
                     │                                              │
                     │  ┌──────────────┐    ┌───────────────────┐  │
  Webhook ──────────►│  │  Gerador de  │    │   Roteirizador    │  │
- (manual/semanal)   │  │   Ideias     │    │   Automático      │  │
+ (manual/semanal)   │  │   Ideias     │    │   Automatico      │  │
                     │  │              │    │                   │  │
                     │  │ 5 ideias/vez │    │ A cada 30 min     │  │
                     │  │ GPT-4o       │    │ verifica aprovadas│  │
@@ -58,155 +45,130 @@ O espectador não sai com um tutorial. Sai sentindo que não está sozinho.
                     ┌─────────────────────────────────────────────┐
                     │        WORKFLOWS COMPLEMENTARES              │
                     │                                              │
-                    │  Newsletter (15h) ──► Instagram (15h30)     │
-                    │        │                                     │
-                    │        └──────────► LinkedIn (Seg/Qua/Sex)  │
+                    │  Newsletter ──► Instagram                   │
+                    │       │                                      │
+                    │       └──────► LinkedIn                     │
                     │                                              │
-                    │  Todos alimentam o Notion e direcionam       │
-                    │  tráfego para a newsletter AI Pulse.         │
+                    │  Opcionais. Geram conteudo derivado          │
+                    │  a partir de uma newsletter central.         │
                     └─────────────────────────────────────────────┘
 ```
 
-## Workflow Principal: YouTube Content
+## Fluxo 1 — Gerador de Ideias
 
-O arquivo `workflows/youtube-content.json` contém **dois fluxos** em um único workflow N8N:
-
-### Fluxo 1 — Gerador de Ideias
-
-Disparado por webhook (manual ou agendado). Gera 5 ideias de vídeo e salva no Notion.
+Disparado por webhook (manual ou agendado). Gera 5 ideias de video e salva no Notion.
 
 ```
 Webhook
   ↓
-Notion: Busca ideias existentes (evitar repetição)
+Notion: Busca ideias existentes (evitar repeticao)
   ↓
 Preparar Prompt: monta contexto com filosofia do canal,
-  pilares de conteúdo, canais de referência e regras de voz
+  pilares de conteudo, canais de referencia e regras de voz
   ↓
 OpenAI GPT-4o: Gera 5 ideias (temperature 0.85)
   ↓
 Separar Ideias: desmembra o JSON em itens individuais
   ↓
 Notion: Salva cada ideia com status "Ideia"
-  (título, formato, inspiração, público-alvo,
+  (titulo, formato, inspiracao, publico-alvo,
    gancho, keywords, potencial viral)
 ```
 
-**Distribuição das 5 ideias:**
-- 2 com foco em autoconhecimento/identidade/emoções
-- 1 sobre a jornada real de carreira (erros, dúvidas, viradas)
-- 1 sobre uso consciente de tech/IA
-- 1 livre conectando qualquer pilar com experiência pessoal
+Cada ideia gerada inclui: titulo, insight central, formato sugerido, publico-alvo, gancho para os primeiros 30 segundos, keywords e potencial viral.
 
-**Regra de voz:** nenhuma ideia pode soar como tutorial. Títulos convidam para uma jornada, não prometem resultados.
-
-### Fluxo 2 — Roteirizador Automático
+## Fluxo 2 — Roteirizador Automatico
 
 Roda a cada 30 minutos. Quando encontra ideias com status "Aprovada", gera roteiros completos.
 
 ```
 Schedule Trigger (a cada 30 min)
   ↓
-Preparar Query: filtra por Status = "Aprovada"
-  ↓
-Notion API: Busca ideias aprovadas
-  ↓
-Tem ideias? Se não, para. Se sim, continua.
+Notion API: Busca ideias com status "Aprovada"
   ↓
 Preparar Prompt: monta contexto do roteiro com
-  marcações especiais de produção
+  marcacoes especiais de producao
   ↓
 OpenAI GPT-4o: Gera roteiro completo (temperature 0.75)
   ↓
-Formatar Roteiro: estrutura em Markdown com seções
+Formatar Roteiro: estrutura em Markdown
   ↓
-Notion: Atualiza propriedades (status → "Roteirizada",
-  opções de título, tags, duração)
+Notion: Atualiza propriedades (status → "Roteirizada")
   ↓
-Notion: Adiciona roteiro completo como conteúdo da página
+Notion: Adiciona roteiro completo na pagina
 ```
 
 **Estrutura do roteiro gerado:**
+
 1. **Gancho** (0:00-0:30) — primeiros segundos que prendem
-2. **Intro** (0:30-1:30) — contexto + história pessoal
-3. **Desenvolvimento** (1:30-8:00) — 3-4 blocos com marcações de produção
-4. **Clímax** (8:00-9:00) — insight principal
-5. **CTA** (9:00-9:30) — inscrição, newsletter, comentários
+2. **Intro** (0:30-1:30) — contexto + historia pessoal
+3. **Desenvolvimento** (1:30-8:00) — 3-4 blocos com marcacoes de producao
+4. **Climax** (8:00-9:00) — insight principal
+5. **CTA** (9:00-9:30) — inscricao, newsletter, comentarios
 6. **Encerramento** (9:30-10:00) — despedida pessoal
 
-**Extras gerados:** 3 opções de título (A/B test), 3 sugestões de thumbnail, 10-15 tags YouTube, descrição com timestamps.
+**Extras gerados:** 3 opcoes de titulo (A/B test), 3 sugestoes de thumbnail, 10-15 tags YouTube, descricao com timestamps.
 
-### Marcações Especiais no Roteiro
+### Marcacoes de Producao no Roteiro
 
-Os roteiros incluem marcações que facilitam a gravação:
+Os roteiros incluem marcacoes que facilitam a gravacao:
 
-| Marcação | Significado |
+| Marcacao | Significado |
 |----------|-------------|
-| `[INSERIR HISTÓRIA PESSOAL: ...]` | Onde Isis adiciona vivências próprias |
-| `[NOTA DE PRODUÇÃO: ...]` | Sugestões de B-roll, gráficos, transições |
+| `[INSERIR HISTORIA PESSOAL: ...]` | Onde o creator adiciona vivencias proprias |
+| `[NOTA DE PRODUCAO: ...]` | Sugestoes de B-roll, graficos, transicoes |
 | `[GANCHO VISUAL: ...]` | Momentos que precisam de destaque visual |
-| `[PAUSA DRAMÁTICA]` | Momentos de silêncio intencional |
-| `[MUDANÇA DE ENERGIA]` | Quando o tom deve mudar |
+| `[PAUSA DRAMATICA]` | Momentos de silencio intencional |
+| `[MUDANCA DE ENERGIA]` | Quando o tom deve mudar |
 
-## Workflows Complementares
+## Pipeline de Conteudo no Notion
 
-Os workflows 01–03 podem ser gerados pelo script `generate-workflows.js` e alimentam o ecossistema de conteúdo:
-
-| # | Workflow | Arquivo | Schedule | Descrição |
-|---|---------|---------|----------|-----------|
-| 01 | Newsletter AI Pulse | `01-newsletter-pipeline.json` | Diário 15h | Descobre tópicos, pesquisa, escreve newsletter completa |
-| 02 | Instagram IBACompany | `02-instagram-content.json` | Diário 15h30 | Gera 3 posts a partir da newsletter do dia |
-| 03 | LinkedIn Isis | `03-linkedin-content.json` | Seg/Qua/Sex 8h | Gera 2 posts reflexivos conectados à newsletter |
-
-```bash
-node generate-workflows.js
+```
+Ideia ──► Aprovada ──► Roteirizada ──► Filmada ──► Publicada
+  │           │             │              │            │
+  │     (manual, pelo   (automatico,   (manual)     (manual)
+  │      creator)        via N8N)
+  │
+  └── Rejeitada (descartada)
 ```
 
-## Canais de Referência
+## O Que Voce Precisa Adaptar
 
-O sistema usa estes canais como referência para estilo e formato:
+Antes de usar o sistema, personalize estas partes nos prompts do N8N:
 
-| Canal | Referência de... |
-|-------|-----------------|
-| **pearlieee** | Video-ensaios intimistas, psicologia, autoconhecimento |
-| **Nathaniel Drew** | Video-ensaios introspectivos sobre identidade e mudança |
-| **Rowena Tsai** | Autodesenvolvimento, identidade, vida com propósito |
-| **For You From Eve** | Relacionamentos, limites, honestidade sem filtro |
-| **Tina Huang** | Data science, carreira em tech, perspectiva feminina |
-| **Fireship** | Tech trends, formato dinâmico (referência de ritmo) |
-| **Theo t3.gg** | Opiniões fortes, building in public (autenticidade) |
-| **Ali Abdaal** | Estrutura e formato de vídeos longos (produção) |
+| O que adaptar | Onde no N8N | Referencia |
+|--------------|-------------|------------|
+| Identidade do creator | `systemPrompt` no node `Preparar Prompt: YouTube` | [`docs/prompts.md`](docs/prompts.md) |
+| Pilares de conteudo | `systemPrompt` no node `Preparar Prompt: YouTube` | [`docs/prompts.md`](docs/prompts.md) |
+| Voz e regras de titulo | `userPrompt` no node `Preparar Prompt: YouTube` | [`docs/prompts.md`](docs/prompts.md) |
+| Canais de referencia | `systemPrompt` no node `Preparar Prompt: YouTube` | [`docs/prompts.md`](docs/prompts.md) |
+| Publico-alvo | `systemPrompt` no node `Preparar Prompt: YouTube` | [`docs/prompts.md`](docs/prompts.md) |
+| Estilo do roteiro | `systemPrompt` no node `Preparar Prompt: Roteiro` | [`docs/prompts.md`](docs/prompts.md) |
+| Estrutura do roteiro | `userPrompt` no node `Preparar Prompt: Roteiro` | [`docs/prompts.md`](docs/prompts.md) |
 
-## Público-Alvo
+Guia completo de adaptacao: [`docs/customization.md`](docs/customization.md)
 
-- Profissionais de TI e devs que sentem que falta algo além do técnico
-- Pessoas em transição de carreira para tech
-- Mulheres em tecnologia
-- Curiosos sobre IA que querem entender o impacto na vida humana — não só no mercado
-
-## Pré-requisitos
+## Pre-requisitos
 
 - **N8N** (self-hosted ou cloud) — v1.0+
 - **OpenAI API Key** — com acesso ao GPT-4o
 - **Notion** — Workspace com Integration configurada
-- **Beehiiv** — Conta com acesso à API (para newsletter)
 - **Node.js** — v16+ (apenas para `generate-workflows.js`)
 
-## Setup Rápido
+## Setup Rapido
 
 ### 1. Credenciais no N8N
 
-| Credencial | Tipo | Nome esperado |
-|-----------|------|---------------|
-| OpenAI | OpenAI API | Nome à sua escolha |
-| Notion | Notion API | Nome à sua escolha |
-| Beehiiv | Header Auth | `Beehiiv API` |
+| Credencial | Tipo |
+|-----------|------|
+| OpenAI | OpenAI API |
+| Notion | Notion API |
 
 ### 2. Database no Notion
 
 Crie o database de YouTube com as propriedades listadas em [`docs/notion-setup.md`](docs/notion-setup.md).
 
-Após criar o database, copie o ID e configure na variável de ambiente `NOTION_YOUTUBE_DB_ID` no N8N.
+Configure o ID como variavel de ambiente `NOTION_YOUTUBE_DB_ID` no N8N (Settings → Variables).
 
 ### 3. Importar o Workflow
 
@@ -214,72 +176,58 @@ Após criar o database, copie o ID e configure na variável de ambiente `NOTION_
 2. **"+ Add Workflow"** → **"Import from File"**
 3. Selecione `workflows/youtube-content.json`
 4. Mapeie as credenciais (Notion + OpenAI)
-5. Atualize o Database ID do Notion nos nodes
-6. Ative o workflow
+5. Ative o workflow
 
-### 4. Usar o Gerador de Ideias
+### 4. Personalizar os Prompts
 
-Dispare o webhook manualmente ou configure um trigger semanal. As 5 ideias aparecerão no Notion com status "Ideia".
+Edite os Code nodes `Preparar Prompt: YouTube` e `Preparar Prompt: Roteiro` com a identidade do seu canal. Veja [`docs/prompts.md`](docs/prompts.md) para a estrutura completa e [`docs/customization.md`](docs/customization.md) para o guia passo a passo.
 
-### 5. Aprovar e Roteirizar
+### 5. Usar
 
-No Notion, mude o status de uma ideia para **"Aprovada"**. Em até 30 minutos, o roteirizador automático vai gerar o roteiro completo e salvar na mesma página.
+- Dispare o webhook para gerar ideias
+- Revise no Notion e mude o status para "Aprovada"
+- O roteirizador gera o roteiro em ate 30 minutos
 
-## Pipeline de Conteúdo no Notion
+## Workflows Complementares
 
+Os workflows 01-03 sao opcionais e podem ser gerados pelo script `generate-workflows.js`. Eles criam conteudo derivado para outras plataformas:
+
+| # | Workflow | Arquivo | Descricao |
+|---|---------|---------|-----------|
+| 01 | Newsletter | `01-newsletter-pipeline.json` | Pipeline completo de newsletter |
+| 02 | Instagram | `02-instagram-content.json` | Posts derivados da newsletter |
+| 03 | LinkedIn | `03-linkedin-content.json` | Posts reflexivos derivados da newsletter |
+
+```bash
+node generate-workflows.js
 ```
-Ideia ──► Aprovada ──► Roteirizada ──► Filmada ──► Publicada
-  │           │             │              │            │
-  │     (muda status    (automático,   (manual,     (manual,
-  │      manualmente)    via N8N)      por Isis)    por Isis)
-  │
-  └── Rejeitada (descartada)
-```
 
-## Personalização
-
-### Ajustar Prompts
-
-Os prompts estão nos nodes `Preparar Prompt: YouTube` e `Preparar Prompt: Roteiro`. Para personalizar:
-
-1. Abra o Code node no N8N
-2. Edite `systemPrompt` (identidade/filosofia) ou `userPrompt` (regras/formato)
-3. Teste com "Execute Node" antes de salvar
-
-Documentação detalhada dos prompts: [`docs/prompts.md`](docs/prompts.md)
-
-### Ajustar Modelo de IA
+## Modelo de IA
 
 | Modelo | Uso recomendado | Custo |
 |--------|----------------|-------|
-| `gpt-4o` | Ideias e roteiros (padrão) | ~$0.50/execução |
-| `gpt-4o-mini` | Testes rápidos | ~$0.05/execução |
-
-### Ajustar Frequência
-
-- **Gerador de ideias:** Webhook manual ou cron semanal
-- **Roteirizador:** A cada 30 minutos (configurável no Schedule Trigger)
+| `gpt-4o` | Ideias e roteiros (padrao) | ~$0.50/execucao |
+| `gpt-4o-mini` | Testes rapidos | ~$0.05/execucao |
 
 ## Custos Estimados
 
-| Componente | Frequência | Custo/mês |
+| Componente | Frequencia | Custo/mes |
 |-----------|-----------|-----------|
 | YouTube (ideias) | 1x/semana | ~$1-2 |
 | YouTube (roteiros) | Sob demanda | ~$0.50/roteiro |
-| Newsletter | 1x/dia | ~$15-25 |
-| Instagram | 1x/dia | ~$3-5 |
-| LinkedIn | 3x/semana | ~$2-3 |
-| **Total** | | **~$22-36** |
+| Newsletter (opcional) | 1x/dia | ~$15-25 |
+| Instagram (opcional) | 1x/dia | ~$3-5 |
+| LinkedIn (opcional) | 3x/semana | ~$2-3 |
 
 ## Troubleshooting
 
-| Problema | Solução |
+| Problema | Solucao |
 |----------|---------|
 | Notion erro 401 | Verifique se a Integration tem acesso ao database |
 | OpenAI erro 429 | Rate limit — aumente o timeout ou adicione retry |
-| Roteiro não gerado | Confirme que o status no Notion é exatamente `Aprovada` |
-| Ideias repetidas | O prompt já filtra ideias existentes; verifique se o node Notion busca todas |
-| JSON inválido do GPT | O código tem fallback com regex; se persistir, reduza `temperature` |
+| Roteiro nao gerado | Confirme que o status no Notion e exatamente `Aprovada` |
+| Ideias repetidas | O prompt ja filtra ideias existentes; verifique se o node Notion busca todas |
+| JSON invalido do GPT | O codigo tem fallback com regex; se persistir, reduza `temperature` |
 
 ## Estrutura do Projeto
 
@@ -291,14 +239,18 @@ Documentação detalhada dos prompts: [`docs/prompts.md`](docs/prompts.md)
 │   └── 03-linkedin-content.json       # Posts LinkedIn (gerado)
 ├── docs/
 │   ├── notion-setup.md                # Setup do database Notion
-│   ├── youtube-workflow.md            # Documentação detalhada do workflow YouTube
-│   └── prompts.md                     # Filosofia e prompts do canal
-├── generate-workflows.js              # Script que gera workflows 01–03
+│   ├── youtube-workflow.md            # Documentacao tecnica do workflow
+│   ├── prompts.md                     # Estrutura e anatomia dos prompts
+│   └── customization.md              # Guia de adaptacao para novos creators
+├── generate-workflows.js              # Script que gera workflows 01-03
+├── .env.example                       # Variaveis de ambiente
+├── .gitignore
 └── README.md
 ```
 
-## Documentação
+## Documentacao
 
+- [`docs/customization.md`](docs/customization.md) — Guia de adaptacao para novos creators
+- [`docs/prompts.md`](docs/prompts.md) — Estrutura dos prompts e como personalizar
 - [`docs/notion-setup.md`](docs/notion-setup.md) — Como configurar o database no Notion
-- [`docs/youtube-workflow.md`](docs/youtube-workflow.md) — Diagrama detalhado de cada node do workflow
-- [`docs/prompts.md`](docs/prompts.md) — Filosofia do canal, regras de voz e estrutura dos prompts
+- [`docs/youtube-workflow.md`](docs/youtube-workflow.md) — Documentacao tecnica de cada node

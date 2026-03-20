@@ -1,10 +1,10 @@
-# YouTube Content Workflow — Documentação Técnica
+# YouTube Content Workflow — Documentacao Tecnica
 
-Documentação detalhada de cada node do workflow `youtube-content.json`, com explicação do fluxo de dados, parâmetros de IA e lógica de processamento.
+Documentacao detalhada de cada node do workflow `youtube-content.json`, com explicacao do fluxo de dados, parametros de IA e logica de processamento.
 
-## Visão Geral
+## Visao Geral
 
-O workflow contém **15 nodes** organizados em **dois fluxos paralelos** dentro do mesmo workflow N8N:
+O workflow contem **15 nodes** organizados em **dois fluxos paralelos** dentro do mesmo workflow N8N:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -18,7 +18,7 @@ O workflow contém **15 nodes** organizados em **dois fluxos paralelos** dentro 
 └─────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ FLUXO 2: ROTEIRIZADOR AUTOMÁTICO (linha inferior, y=224)               │
+│ FLUXO 2: ROTEIRIZADOR AUTOMATICO (linha inferior, y=224)               │
 │                                                                         │
 │ Schedule ─► Preparar ─► Notion: Buscar ─► Tem Ideias? ─► Preparar ─►  │
 │ (30 min)    Query       Aprovadas                         Prompt:      │
@@ -26,7 +26,7 @@ O workflow contém **15 nodes** organizados em **dois fluxos paralelos** dentro 
 │                                                              ─►        │
 │                     OpenAI ─► Formatar ─► Notion: ─► Notion:           │
 │                     Gerar     Roteiro     Atualizar   Adicionar         │
-│                     Roteiro               Roteiro     na Página         │
+│                     Roteiro               Roteiro     na Pagina         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -38,14 +38,14 @@ O workflow contém **15 nodes** organizados em **dois fluxos paralelos** dentro 
 |-------|-------|
 | Tipo | `n8n-nodes-base.webhook` |
 | Path | `youtube-content-generator` |
-| Método | GET (padrão) |
+| Metodo | GET (padrao) |
 
 Ponto de entrada manual. Pode ser disparado por:
-- Chamada HTTP direta à URL do webhook
+- Chamada HTTP direta a URL do webhook
 - Outro workflow N8N (via HTTP Request)
 - Ferramenta externa (Zapier, Make, cron job)
 
-**Saída:** Dispara o fluxo sem dados específicos.
+**Saida:** Dispara o fluxo sem dados especificos.
 
 ---
 
@@ -54,13 +54,13 @@ Ponto de entrada manual. Pode ser disparado por:
 | Campo | Valor |
 |-------|-------|
 | Tipo | `n8n-nodes-base.notion` |
-| Operação | `getAll` (databasePage) |
-| Database ID | `$env.NOTION_YOUTUBE_DB_ID` (variável de ambiente) |
+| Operacao | `getAll` (databasePage) |
+| Database ID | `$env.NOTION_YOUTUBE_DB_ID` (variavel de ambiente) |
 | Credencial | Sua credencial Notion |
 
-Busca **todas** as páginas do database de YouTube para extrair títulos existentes e evitar repetição.
+Busca **todas** as paginas do database de YouTube para extrair titulos existentes e evitar repeticao.
 
-**Saída:** Array de pages do Notion com todas as propriedades.
+**Saida:** Array de pages do Notion com todas as propriedades.
 
 ---
 
@@ -71,22 +71,22 @@ Busca **todas** as páginas do database de YouTube para extrair títulos existen
 | Tipo | `n8n-nodes-base.code` |
 | Linguagem | JavaScript |
 
-Lógica principal:
-1. Extrai títulos de todas as ideias existentes (campo `Name.title`)
-2. Monta `systemPrompt` com toda a filosofia do canal
-3. Monta `userPrompt` com regras de geração, distribuição e critérios
+Logica principal:
+1. Extrai titulos de todas as ideias existentes (campo `Name.title`)
+2. Monta `systemPrompt` com toda a estrategia editorial do canal
+3. Monta `userPrompt` com regras de geracao, distribuicao e criterios
 4. Retorna o `requestBody` pronto para a API da OpenAI
 
-**Parâmetros da IA:**
+**Parametros da IA:**
 
-| Parâmetro | Valor | Por quê |
+| Parametro | Valor | Por que |
 |-----------|-------|---------|
-| model | `gpt-4o` | Máxima qualidade para ideias criativas |
-| temperature | `0.85` | Alta criatividade sem perder coerência |
-| max_tokens | `5000` | Espaço para 5 ideias detalhadas |
-| response_format | `json_object` | Garante JSON válido na resposta |
+| model | `gpt-4o` | Maxima qualidade para ideias criativas |
+| temperature | `0.85` | Alta criatividade sem perder coerencia |
+| max_tokens | `5000` | Espaco para 5 ideias detalhadas |
+| response_format | `json_object` | Garante JSON valido na resposta |
 
-**Saída:** Objeto com `existingIdeas` e `requestBody`.
+**Saida:** Objeto com `existingIdeas` e `requestBody`.
 
 ---
 
@@ -96,7 +96,7 @@ Lógica principal:
 |-------|-------|
 | Tipo | `n8n-nodes-base.httpRequest` |
 | URL | `https://api.openai.com/v1/chat/completions` |
-| Método | POST |
+| Metodo | POST |
 | Timeout | 120.000ms (2 min) |
 | Credencial | Sua credencial OpenAI |
 
@@ -106,20 +106,22 @@ Envia o prompt montado para o GPT-4o e recebe um JSON com 5 ideias.
 
 ```json
 {
-  "title_suggestion": "Título que convida para jornada",
-  "core_insight": "Insight central do vídeo",
-  "isis_real_moment": "Momento real da vida da Isis",
+  "title_suggestion": "Titulo que convida para jornada",
+  "core_insight": "Insight central do video",
+  "isis_real_moment": "Momento real da vida do creator como base",
   "emotional_takeaway": "O que o espectador vai sentir",
-  "original_inspiration": "Canal/tendência que inspirou",
+  "original_inspiration": "Canal/tendencia que inspirou",
   "target_audience": "Para quem fala",
-  "estimated_length": "Duração estimada",
-  "format": "video-ensaio|storytelling|reflexão|diário-em-vídeo|análise-pessoal",
-  "hook_idea": "Como abrir o vídeo nos primeiros 30s",
-  "viral_potential": "Baixo|Médio|Alto",
-  "authority_building": "Baixo|Médio|Alto",
+  "estimated_length": "Duracao estimada",
+  "format": "video-ensaio|storytelling|reflexao|diario-em-video|analise-pessoal",
+  "hook_idea": "Como abrir o video nos primeiros 30s",
+  "viral_potential": "Baixo|Medio|Alto",
+  "authority_building": "Baixo|Medio|Alto",
   "keywords": ["keyword1", "keyword2"]
 }
 ```
+
+> **Nota:** O campo `isis_real_moment` e herdado da implementacao de referencia. Voce pode renomea-lo (ex: `personal_moment`, `real_experience`) atualizando o prompt no node 3, o parser no node 5, e o mapeamento no node 6.
 
 ---
 
@@ -131,9 +133,11 @@ Envia o prompt montado para o GPT-4o e recebe um JSON com 5 ideias.
 
 Faz o parse do JSON retornado pela OpenAI e desmembra as 5 ideias em 5 itens individuais, cada um com campos normalizados para o Notion.
 
-Possui fallback com regex caso o JSON não faça parse direto.
+Possui fallback com regex caso o JSON nao faca parse direto.
 
-**Saída:** 5 itens, cada um com: `title`, `inspiration`, `isisAngle`, `targetAudience`, `estimatedLength`, `format`, `hookIdea`, `viralPotential`, `authorityBuilding`, `keywords`, `date`, `ideaNumber`, `status`.
+**Saida:** 5 itens, cada um com: `title`, `inspiration`, `isisAngle`, `targetAudience`, `estimatedLength`, `format`, `hookIdea`, `viralPotential`, `authorityBuilding`, `keywords`, `date`, `ideaNumber`, `status`.
+
+> **Nota:** O campo `isisAngle` e herdado da implementacao de referencia. Ele leva o valor de `core_insight` da resposta do GPT. Se renomear, atualize tambem o mapeamento no node 6.
 
 ---
 
@@ -142,9 +146,9 @@ Possui fallback com regex caso o JSON não faça parse direto.
 | Campo | Valor |
 |-------|-------|
 | Tipo | `n8n-nodes-base.notion` |
-| Operação | `create` (databasePage) |
+| Operacao | `create` (databasePage) |
 
-Cria uma página no Notion para cada ideia com todas as propriedades preenchidas. Também adiciona um bloco de texto com gancho, ângulo da Isis e inspiração no corpo da página.
+Cria uma pagina no Notion para cada ideia com todas as propriedades preenchidas. Tambem adiciona um bloco de texto com gancho, angulo editorial e inspiracao no corpo da pagina.
 
 **Mapeamento de propriedades:**
 
@@ -154,16 +158,18 @@ Cria uma página no Notion para cada ideia com todas as propriedades preenchidas
 | Status | `Ideia` |
 | Data | Data atual |
 | Formato | `$json.format` |
-| Inspiração | `$json.inspiration` |
-| Ângulo Isis | `$json.isisAngle` |
-| Público-alvo | `$json.targetAudience` |
-| Duração Estimada | `$json.estimatedLength` |
+| Inspiracao | `$json.inspiration` |
+| Angulo Isis | `$json.isisAngle` |
+| Publico-alvo | `$json.targetAudience` |
+| Duracao Estimada | `$json.estimatedLength` |
 | Potencial Viral | `$json.viralPotential` |
 | Keywords | `$json.keywords` |
 
+> **Nota:** A propriedade "Angulo Isis" no Notion pode ser renomeada para refletir a identidade do seu canal (ex: "Angulo Editorial", "Perspectiva do Creator"). Se renomear, atualize o nome da propriedade neste node tambem.
+
 ---
 
-## Fluxo 2: Roteirizador Automático
+## Fluxo 2: Roteirizador Automatico
 
 ### Node 7: Verificar aprovados (Schedule Trigger)
 
@@ -172,7 +178,7 @@ Cria uma página no Notion para cada ideia com todas as propriedades preenchidas
 | Tipo | `n8n-nodes-base.scheduleTrigger` |
 | Intervalo | A cada 30 minutos |
 
-Dispara automaticamente. Quando o workflow está ativo, este trigger roda continuamente verificando se há ideias prontas para roteirizar.
+Dispara automaticamente. Quando o workflow esta ativo, este trigger roda continuamente verificando se ha ideias prontas para roteirizar.
 
 ---
 
@@ -184,10 +190,10 @@ Dispara automaticamente. Quando o workflow está ativo, este trigger roda contin
 
 Monta o body da query para a API do Notion:
 - Filtra por `Status = "Aprovada"`
-- Ordena por data de criação (mais recente primeiro)
+- Ordena por data de criacao (mais recente primeiro)
 - Limita a 10 resultados
 
-**Saída:** `notionDbId` e `requestBody` com filtro.
+**Saida:** `notionDbId` e `requestBody` com filtro.
 
 ---
 
@@ -197,10 +203,10 @@ Monta o body da query para a API do Notion:
 |-------|-------|
 | Tipo | `n8n-nodes-base.httpRequest` |
 | URL | `https://api.notion.com/v1/databases/{dbId}/query` |
-| Método | POST |
+| Metodo | POST |
 | Header | `Notion-Version: 2022-06-28` |
 
-Usa a API do Notion diretamente (não o node nativo) para ter controle total sobre filtros e ordenação.
+Usa a API do Notion diretamente (nao o node nativo) para ter controle total sobre filtros e ordenacao.
 
 ---
 
@@ -210,7 +216,7 @@ Usa a API do Notion diretamente (não o node nativo) para ter controle total sob
 |-------|-------|
 | Tipo | `n8n-nodes-base.code` |
 
-Verifica se há resultados. Se `results.length === 0`, retorna array vazio (o fluxo para). Se há resultados, desmembra cada página em um item separado.
+Verifica se ha resultados. Se `results.length === 0`, retorna array vazio (o fluxo para). Se ha resultados, desmembra cada pagina em um item separado.
 
 ---
 
@@ -220,22 +226,22 @@ Verifica se há resultados. Se `results.length === 0`, retorna array vazio (o fl
 |-------|-------|
 | Tipo | `n8n-nodes-base.code` |
 
-Lógica principal:
-1. Extrai título e todas as propriedades da ideia
-2. Monta `systemPrompt` com identidade de roteirista e marcações especiais
-3. Monta `userPrompt` com estrutura obrigatória do roteiro (6 seções)
-4. Solicita extras: títulos A/B, thumbnails, tags, descrição
+Logica principal:
+1. Extrai titulo e todas as propriedades da ideia
+2. Monta `systemPrompt` com identidade de roteirista e marcacoes especiais
+3. Monta `userPrompt` com estrutura obrigatoria do roteiro (6 secoes)
+4. Solicita extras: titulos A/B, thumbnails, tags, descricao
 
-**Parâmetros da IA:**
+**Parametros da IA:**
 
-| Parâmetro | Valor | Por quê |
+| Parametro | Valor | Por que |
 |-----------|-------|---------|
-| model | `gpt-4o` | Máxima qualidade para roteiro longo |
+| model | `gpt-4o` | Maxima qualidade para roteiro longo |
 | temperature | `0.75` | Criativo mas estruturado |
 | max_tokens | `10000` | Roteiro completo + extras |
-| response_format | `json_object` | Garante JSON válido |
+| response_format | `json_object` | Garante JSON valido |
 
-**Saída:** `ideaTitle`, `ideaPageId`, `requestBody`.
+**Saida:** `ideaTitle`, `ideaPageId`, `requestBody`.
 
 ---
 
@@ -247,7 +253,7 @@ Lógica principal:
 | URL | `https://api.openai.com/v1/chat/completions` |
 | Credencial | Sua credencial OpenAI |
 
-Gera o roteiro completo. Sem timeout customizado (usa padrão do N8N).
+Gera o roteiro completo. Sem timeout customizado (usa padrao do N8N).
 
 ---
 
@@ -257,19 +263,19 @@ Gera o roteiro completo. Sem timeout customizado (usa padrão do N8N).
 |-------|-------|
 | Tipo | `n8n-nodes-base.code` |
 
-O node mais complexo do fluxo. Responsável por:
+O node mais complexo do fluxo. Responsavel por:
 
 1. **Parse do JSON** da resposta OpenAI (com fallback regex)
-2. **Montagem do Markdown** completo do roteiro com seções:
-   - Gancho, Intro, Desenvolvimento (blocos), Clímax, CTA, Encerramento
-   - Opções de título, sugestões de thumbnail, tags, descrição
+2. **Montagem do Markdown** completo do roteiro com secoes:
+   - Gancho, Intro, Desenvolvimento (blocos), Climax, CTA, Encerramento
+   - Opcoes de titulo, sugestoes de thumbnail, tags, descricao
 3. **Chunking** do texto em blocos de 2000 caracteres (limite do Notion API)
-4. **Preparação das propriedades** para atualizar no Notion:
+4. **Preparacao das propriedades** para atualizar no Notion:
    - Status → `Roteirizada`
-   - Opções de Título, Tags YouTube, Duração Estimada
-5. **Preparação dos blocos** Notion (array de parágrafos)
+   - Opcoes de Titulo, Tags YouTube, Duracao Estimada
+5. **Preparacao dos blocos** Notion (array de paragrafos)
 
-**Saída:** `ideaTitle`, `ideaPageId`, `fullScript`, `notionProperties`, `notionBlocks`, `date`.
+**Saida:** `ideaTitle`, `ideaPageId`, `fullScript`, `notionProperties`, `notionBlocks`, `date`.
 
 ---
 
@@ -279,21 +285,21 @@ O node mais complexo do fluxo. Responsável por:
 |-------|-------|
 | Tipo | `n8n-nodes-base.httpRequest` |
 | URL | `https://api.notion.com/v1/pages/{ideaPageId}` |
-| Método | PATCH |
+| Metodo | PATCH |
 
-Atualiza as propriedades da página (status, títulos, tags, duração).
+Atualiza as propriedades da pagina (status, titulos, tags, duracao).
 
 ---
 
-### Node 15: Notion: Adicionar Roteiro na Página
+### Node 15: Notion: Adicionar Roteiro na Pagina
 
 | Campo | Valor |
 |-------|-------|
 | Tipo | `n8n-nodes-base.httpRequest` |
 | URL | `https://api.notion.com/v1/blocks/{ideaPageId}/children` |
-| Método | PATCH |
+| Metodo | PATCH |
 
-Adiciona o roteiro completo como blocos de parágrafo no corpo da página. O texto é dividido em chunks de 2000 caracteres para respeitar os limites da API do Notion.
+Adiciona o roteiro completo como blocos de paragrafo no corpo da pagina. O texto e dividido em chunks de 2000 caracteres para respeitar os limites da API do Notion.
 
 ---
 
@@ -301,32 +307,32 @@ Adiciona o roteiro completo como blocos de parágrafo no corpo da página. O tex
 
 ```
 Fluxo 1:
-  Notion Pages [] ──► títulos existentes ──► systemPrompt + userPrompt
+  Notion Pages [] ──► titulos existentes ──► systemPrompt + userPrompt
                                                ──► OpenAI Response (5 ideias JSON)
                                                ──► 5 items normalizados
-                                               ──► 5 páginas criadas no Notion
+                                               ──► 5 paginas criadas no Notion
 
 Fluxo 2:
   Notion Query (Status=Aprovada) ──► pages aprovadas
                                       ──► detalhes da ideia + systemPrompt + userPrompt
                                       ──► OpenAI Response (roteiro JSON)
                                       ──► Markdown formatado + propriedades + blocos
-                                      ──► PATCH página (propriedades)
-                                      ──► PATCH página (conteúdo/blocos)
+                                      ──► PATCH pagina (propriedades)
+                                      ──► PATCH pagina (conteudo/blocos)
 ```
 
-## Credenciais Necessárias
+## Credenciais Necessarias
 
 | Nome no N8N | Tipo | Usado em |
 |-------------|------|----------|
 | Sua credencial Notion | Notion API | Nodes 2, 6, 9, 14, 15 |
 | Sua credencial OpenAI | OpenAI API | Nodes 4, 12 |
 
-## Considerações Técnicas
+## Consideracoes Tecnicas
 
 ### Fallback de JSON
 
-Todos os nodes que fazem parse de resposta do GPT têm dupla proteção:
+Todos os nodes que fazem parse de resposta do GPT tem dupla protecao:
 ```javascript
 try {
   data = JSON.parse(content);
@@ -338,8 +344,17 @@ try {
 
 ### Limite de caracteres do Notion
 
-A API do Notion aceita no máximo 2000 caracteres por bloco `rich_text`. O node "Formatar Roteiro" divide automaticamente o texto em chunks de 2000 chars.
+A API do Notion aceita no maximo 2000 caracteres por bloco `rich_text`. O node "Formatar Roteiro" divide automaticamente o texto em chunks de 2000 chars.
 
-### Concorrência
+### Concorrencia
 
-Se múltiplas ideias estão com status "Aprovada", o roteirizador processa uma por vez (o node "Tem Ideias Aprovadas?" emite um item por página, e o N8N processa sequencialmente).
+Se multiplas ideias estao com status "Aprovada", o roteirizador processa uma por vez (o node "Tem Ideias Aprovadas?" emite um item por pagina, e o N8N processa sequencialmente).
+
+### Campos com nome da implementacao de referencia
+
+Alguns campos no workflow carregam nomes da implementacao original (ex: `isis_real_moment`, `isisAngle`, "Angulo Isis"). Eles funcionam normalmente com qualquer canal. Se desejar renomear para algo mais generico:
+
+1. Atualize o schema JSON no prompt do node `Preparar Prompt: YouTube`
+2. Atualize o parser no node `Separar Ideias`
+3. Atualize o mapeamento no node `Notion: Salvar Ideia YouTube`
+4. Renomeie a propriedade correspondente no database do Notion

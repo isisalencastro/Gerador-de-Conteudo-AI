@@ -1,231 +1,272 @@
-# Filosofia, Voz e Prompts do Canal
+# Anatomia dos Prompts e Customizacao Editorial
 
-Documentação da identidade do canal, regras de voz e estrutura dos prompts usados no workflow de YouTube. Este documento serve como referência para ajustar, expandir ou recriar prompts no N8N.
+Este documento explica a estrutura dos prompts usados no workflow, o que cada secao faz, e como adaptar para qualquer canal ou nicho. Cada prompt e composto por blocos modulares que voce preenche com a identidade do seu canal.
 
-## Quem é Isis Alencastro
-
-- Gestora de automações
-- Desenvolvedora full-stack
-- Analista de marketing
-- Construindo um canal no YouTube na interseção entre **tecnologia, IA e desenvolvimento pessoal**
-
-## Filosofia Central
-
-> Isis NÃO é expert dando dicas. Isis é uma pessoa em evolução documentando sua jornada.
-
-A diferença é fundamental:
-
-| Expert tradicional | Isis |
-|--------------------|------|
-| "Faça assim" | "Eu tentei isso e aprendi tal coisa" |
-| Ensina de cima | Caminha junto com o espectador |
-| Tem respostas | Tem perguntas honestas e descobertas reais |
-
-O canal é um **diário público de crescimento** — profissional E pessoal. O espectador não sai com um tutorial. Sai sentindo que **não está sozinho**.
-
-## Posicionamento
-
-Isis usa tecnologia como ferramenta de:
-- **Autoconhecimento**
-- **Produtividade consciente**
-- **Construção de vida com propósito**
-
-Mostra a jornada **real**: acertos, erros, crises e viradas. O tech é o contexto. O desenvolvimento pessoal é o coração.
-
-## Pilares de Conteúdo
-
-Em ordem de prioridade:
-
-1. **Evolução Documentada** — mostrar quem ela era, quem está se tornando, o que mudou
-2. **Autoconhecimento na jornada em tech** — o que aprender revela sobre si mesma
-3. **Desenvolvimento Pessoal aplicado à vida em tech** — identidade profissional, síndrome do impostor, burnout, limites, propósito
-4. **Produtividade Consciente** — sistemas que respeitam a vida, não apenas otimizam
-5. **IA & Tech como gatilho de reflexão pessoal** — não como tema técnico isolado
-
-## Público-Alvo
-
-- Profissionais de TI e devs que sentem que falta algo além do técnico
-- Pessoas em transição de carreira para tech
-- Mulheres em tecnologia
-- Curiosos sobre IA que querem entender o impacto na vida humana — não só no mercado
-
-## Canais de Referência
-
-| Canal | O que extrair |
-|-------|--------------|
-| **pearlieee** | Video-ensaios intimistas, psicologia, autoconhecimento e healing com tom pessoal |
-| **Nathaniel Drew** | Video-ensaios introspectivos sobre identidade e mudança |
-| **Rowena Tsai** | Autodesenvolvimento, identidade, vida com propósito |
-| **For You From Eve** | Relacionamentos, limites, honestidade sem filtro |
-| **Tina Huang** | Data science, carreira em tech, perspectiva feminina e honesta |
-| **Fireship** | Tech trends, formato dinâmico — referência de ritmo |
-| **Theo t3.gg** | Opiniões fortes, building in public — referência de autenticidade |
-| **Ali Abdaal** | Estrutura e formato de vídeos longos — referência de produção |
+Para um guia passo a passo de adaptacao, veja [`customization.md`](customization.md).
 
 ---
 
-## Regras de Voz
+## Estrutura Geral
 
-### O que EVITAR nos títulos
+O sistema usa dois conjuntos de prompts, cada um com `systemPrompt` + `userPrompt`:
 
-- "Como fazer X"
-- "5 dicas para Y"
-- "O guia definitivo de Z"
-- Qualquer coisa que soe como tutorial ou lista prescritiva
+| Prompt | Node no N8N | Funcao |
+|--------|-------------|--------|
+| Gerador de Ideias | `Preparar Prompt: YouTube` | Define identidade editorial e gera 5 ideias |
+| Roteirizador | `Preparar Prompt: Roteiro` | Define estilo de roteiro e gera roteiro completo |
 
-### O que BUSCAR nos títulos
+### Anatomia de um prompt no sistema
 
-- "O que X me ensinou sobre mim mesma"
-- "Quando percebi que Z mudou tudo"
-- "Estou tentando X — o que aprendi até agora"
-- "Por que parei de fazer Y (e o que isso revelou)"
+```
+systemPrompt = contexto permanente (quem e o canal, como pensa, como fala)
+userPrompt   = instrucao especifica da tarefa (o que gerar, em que formato, com que regras)
+```
 
-### Princípio
-
-Nenhuma ideia pode soar como "aprenda X comigo" ou "dicas de Y". Toda ideia deve soar como "isso aconteceu comigo e mudou algo" ou "estou descobrindo X e quero compartilhar". O título convida para uma **jornada**, não promete um **resultado**.
+O `systemPrompt` muda raramente — ele e a identidade do canal. O `userPrompt` muda com frequencia — e a instrucao de execucao.
 
 ---
 
-## Prompt: Gerador de Ideias
+## Prompt 1: Gerador de Ideias
 
-Usado no node `Preparar Prompt: YouTube`.
+### System Prompt — Estrutura
 
-### System Prompt
+O system prompt do gerador de ideias e composto por 6 blocos. Cada bloco tem uma funcao especifica:
 
-Define a identidade completa do assistente:
-- Quem é Isis (cargo, área)
-- Filosofia central do canal (com exemplos de contraste expert vs. Isis)
-- Posicionamento central
-- 5 pilares de conteúdo com descrições
-- 8 canais de referência com o que cada um inspira
-- Público-alvo detalhado
+| # | Bloco | Funcao | Exemplo de conteudo |
+|---|-------|--------|---------------------|
+| 1 | **Identidade do creator** | Quem e voce, contexto profissional | "Desenvolvedora e gestora de automacoes" |
+| 2 | **Filosofia central** | Posicionamento editorial — como voce se diferencia | "Nao ensino de cima. Documento minha jornada." |
+| 3 | **Posicionamento** | O que a tecnologia/conteudo representa pra voce | "Tech como ferramenta de autoconhecimento" |
+| 4 | **Pilares de conteudo** | 3-5 temas centrais do canal, em ordem de prioridade | "1. Evolucao documentada 2. Dev pessoal em tech..." |
+| 5 | **Canais de referencia** | Inspiracoes com nota sobre o que cada um inspira | "pearlieee: video-ensaios intimistas" |
+| 6 | **Publico-alvo** | Para quem voce fala especificamente | "Devs que sentem falta de algo alem do tecnico" |
 
-### User Prompt
+#### Bloco 1 — Identidade do Creator
 
-Regras de geração:
-- Data do dia
-- Regra principal: desenvolvimento pessoal como fio condutor
-- Regras de voz com exemplos do que evitar e buscar
-- Lista de ideias existentes (para evitar repetição)
-- Distribuição das 5 ideias:
-  - 2x autoconhecimento/identidade/emoções
-  - 1x jornada de carreira
-  - 1x uso consciente de tech/IA
-  - 1x livre (experiência pessoal marcante)
-- 5 critérios para cada ideia
-- Formato JSON de resposta com 12 campos por ideia
+Descreva quem voce e em 2-3 linhas. Foque em papel profissional e area de atuacao.
 
-### Parâmetros de IA
+```
+Voce e assistente de criacao de conteudo para YouTube de [NOME].
+[NOME] e [CARGO/AREA]. Construindo um canal na intersecao entre [TEMA A], [TEMA B] e [TEMA C].
+```
 
-| Parâmetro | Valor | Razão |
+#### Bloco 2 — Filosofia Central
+
+Defina o enquadramento editorial do canal. Use contraste para deixar claro:
+
+```
+FILOSOFIA CENTRAL DO CANAL:
+[NOME] NAO e [o que voce NAO e]. [NOME] e [o que voce E].
+
+Diferenca:
+- Expert tradicional: "Faca assim"
+- [NOME]: "Eu tentei isso e aprendi tal coisa"
+```
+
+#### Bloco 3 — Posicionamento
+
+O que seu conteudo representa alem do tema tecnico:
+
+```
+POSICIONAMENTO CENTRAL:
+[NOME] usa [SEU TEMA] como ferramenta de:
+- [VALOR 1]
+- [VALOR 2]
+- [VALOR 3]
+```
+
+#### Bloco 4 — Pilares de Conteudo
+
+Liste 3-5 pilares em ordem de prioridade. Cada pilar deve ter nome + descricao curta:
+
+```
+PILARES DE CONTEUDO (em ordem de prioridade):
+1. [PILAR] — [descricao do que esse pilar cobre]
+2. [PILAR] — [descricao]
+3. [PILAR] — [descricao]
+```
+
+#### Bloco 5 — Canais de Referencia
+
+Canais que inspiram formato, tom ou abordagem:
+
+```
+CANAIS DE REFERENCIA:
+- [Canal 1]: [o que extrair — formato, tom, estilo]
+- [Canal 2]: [o que extrair]
+```
+
+#### Bloco 6 — Publico-Alvo
+
+Quem assiste seu canal, descrito com especificidade:
+
+```
+PUBLICO-ALVO:
+- [Segmento 1]
+- [Segmento 2]
+- [Segmento 3]
+```
+
+---
+
+### User Prompt — Estrutura
+
+O user prompt do gerador contem as instrucoes de execucao:
+
+| # | Bloco | Funcao |
+|---|-------|--------|
+| 1 | **Data** | Data atual (injetada automaticamente) |
+| 2 | **Regra principal** | Fio condutor de todas as ideias |
+| 3 | **Regras de voz** | Exemplos do que evitar e buscar em titulos |
+| 4 | **Ideias existentes** | Lista do Notion para evitar repeticao (injetada automaticamente) |
+| 5 | **Distribuicao** | Proporcao entre pilares nas 5 ideias |
+| 6 | **Criterios** | O que cada ideia precisa ter |
+| 7 | **Formato JSON** | Schema de resposta com todos os campos |
+
+#### Regras de Voz — Como Configurar
+
+As regras de voz determinam o estilo dos titulos e abordagens. Defina:
+
+**O que EVITAR:**
+- Titulos que soam como tutorial ("Como fazer X")
+- Listas prescritivas ("5 dicas para Y")
+- Promessas de autoridade ("O guia definitivo de Z")
+
+**O que BUSCAR:**
+- Titulos que convidam para uma jornada ("O que X me ensinou sobre Y")
+- Honestidade sobre o processo ("Estou tentando X — o que aprendi ate agora")
+- Vulnerabilidade ("Por que parei de fazer Y")
+
+Adapte esses exemplos para o tom do seu canal. Um canal tecnico pode buscar "O que quebrou quando tentei X em producao"; um canal pessoal pode buscar "O dia em que X mudou minha perspectiva".
+
+#### Distribuicao das Ideias
+
+Defina como as 5 ideias se dividem entre os pilares:
+
+```
+DISTRIBUICAO DAS 5 IDEIAS:
+- 2x [pilar principal]
+- 1x [pilar 2]
+- 1x [pilar 3]
+- 1x livre (experiencia marcante)
+```
+
+#### Formato JSON de Resposta
+
+Cada ideia gera um objeto com estes campos:
+
+| Campo | Tipo | Descricao |
+|-------|------|-----------|
+| `title_suggestion` | string | Titulo em portugues (tom de jornada) |
+| `core_insight` | string | Insight ou virada central da ideia |
+| `isis_real_moment` | string | Momento real da vida do creator como base — renomeie este campo se desejar |
+| `emotional_takeaway` | string | O que o espectador vai sentir |
+| `original_inspiration` | string | Canal/tendencia que inspirou |
+| `target_audience` | string | Para quem fala especificamente |
+| `estimated_length` | string | Duracao estimada |
+| `format` | string | video-ensaio, storytelling, reflexao, diario-em-video, analise-pessoal |
+| `hook_idea` | string | Como abrir nos primeiros 30 segundos |
+| `viral_potential` | string | Baixo, Medio, Alto |
+| `authority_building` | string | Baixo, Medio, Alto |
+| `keywords` | string | Palavras-chave para SEO |
+
+> **Nota:** Para renomear campos como `isis_real_moment`, voce precisa atualizar tambem o node `Separar Ideias` e o mapeamento no node `Notion: Salvar Ideia YouTube`.
+
+### Parametros de IA
+
+| Parametro | Valor | Razao |
 |-----------|-------|-------|
-| model | `gpt-4o` | Qualidade máxima |
-| temperature | `0.85` | Alta criatividade |
-| max_tokens | `5000` | Espaço para 5 ideias detalhadas |
+| model | `gpt-4o` | Qualidade maxima |
+| temperature | `0.85` | Alta criatividade — diminua para ideias mais conservadoras |
+| max_tokens | `5000` | Espaco para 5 ideias detalhadas |
 | response_format | `json_object` | JSON garantido |
 
-### Campos gerados por ideia
-
-| Campo | Descrição |
-|-------|-----------|
-| `title_suggestion` | Título em português (jornada, não tutorial) |
-| `core_insight` | Insight ou virada central |
-| `isis_real_moment` | Momento real da vida da Isis como base |
-| `emotional_takeaway` | O que o espectador vai sentir |
-| `original_inspiration` | Canal/tendência que inspirou |
-| `target_audience` | Para quem fala especificamente |
-| `estimated_length` | Duração estimada |
-| `format` | video-ensaio, storytelling, reflexão, diário-em-vídeo, análise-pessoal |
-| `hook_idea` | Como abrir nos primeiros 30 segundos |
-| `viral_potential` | Baixo, Médio, Alto |
-| `authority_building` | Baixo, Médio, Alto |
-| `keywords` | Palavras-chave para SEO |
-
 ---
 
-## Prompt: Roteirizador
+## Prompt 2: Roteirizador
 
-Usado no node `Preparar Prompt: Roteiro`.
+### System Prompt — Estrutura
 
-### System Prompt
+O system prompt do roteirizador define o papel e estilo:
 
-Define o papel de roteirista:
-- Identidade: roteirista da Isis para YouTube
-- Estilo: conversacional, dinâmico, pessoal, profissional
-- 5 marcações especiais de produção:
+| # | Bloco | Funcao |
+|---|-------|--------|
+| 1 | **Papel** | "Voce e o roteirista de [NOME] para YouTube" |
+| 2 | **Estilo** | Conversacional, dinamico, pessoal, profissional |
+| 3 | **Marcacoes de producao** | Marcacoes especiais que o roteiro deve incluir |
 
-| Marcação | Uso |
+#### Marcacoes de Producao
+
+O roteirizador insere marcacoes no corpo do roteiro para facilitar gravacao e edicao:
+
+| Marcacao | Uso |
 |----------|-----|
-| `[INSERIR HISTÓRIA PESSOAL: sugestão]` | Onde Isis coloca vivências próprias |
-| `[NOTA DE PRODUÇÃO: descrição]` | B-roll, gráficos, transições, zoom |
-| `[GANCHO VISUAL: descrição]` | Destaque visual necessário |
-| `[PAUSA DRAMÁTICA]` | Silêncio intencional |
-| `[MUDANÇA DE ENERGIA]` | Mudança de tom |
+| `[INSERIR HISTORIA PESSOAL: sugestao]` | Onde o creator adiciona vivencias proprias |
+| `[NOTA DE PRODUCAO: descricao]` | B-roll, graficos, transicoes, zoom |
+| `[GANCHO VISUAL: descricao]` | Destaque visual necessario |
+| `[PAUSA DRAMATICA]` | Silencio intencional |
+| `[MUDANCA DE ENERGIA]` | Mudanca de tom |
 
-### User Prompt
+Voce pode adicionar novas marcacoes (ex: `[CORTE RAPIDO]`, `[TELA DIVIDIDA]`) editando o system prompt.
 
-Estrutura obrigatória do roteiro:
+### User Prompt — Estrutura
 
-1. **GANCHO (0:00-0:30)** — Primeiros 30 segundos. Curiosidade imediata, dado impactante ou pergunta provocativa. Nota de produção.
+O user prompt do roteirizador define a estrutura obrigatoria do roteiro:
 
-2. **INTRO (0:30-1:30)** — Contexto e promessa. Isis se apresenta. História pessoal de por que o tema importa.
+| Secao | Timing | Conteudo |
+|-------|--------|----------|
+| **GANCHO** | 0:00-0:30 | Curiosidade imediata, dado impactante ou pergunta provocativa |
+| **INTRO** | 0:30-1:30 | Contexto, apresentacao, historia pessoal de conexao com o tema |
+| **DESENVOLVIMENTO** | 1:30-8:00 | 3-4 blocos com subtitulo, conteudo, historias e notas de producao |
+| **CLIMAX** | 8:00-9:00 | Insight principal, momento "aha" que conecta tudo |
+| **CTA** | 9:00-9:30 | Inscricao, newsletter, comentarios — natural, nao forcado |
+| **ENCERRAMENTO** | 9:30-10:00 | Despedida pessoal, previa do proximo video |
 
-3. **DESENVOLVIMENTO (1:30-8:00)** — 3-4 blocos, cada um com subtítulo, conteúdo, história pessoal (mínimo 2 blocos), notas de produção e transição.
+#### Como Adaptar a Estrutura
 
-4. **CLÍMAX (8:00-9:00)** — Insight principal, momento "aha" que conecta tudo.
+- **Videos curtos (5 min):** Reduza o desenvolvimento para 2 blocos e ajuste os timings
+- **Videos longos (20+ min):** Aumente para 5-6 blocos de desenvolvimento
+- **Formato diferente:** Reescreva as secoes. Ex: um canal de reviews pode ter "Unboxing → Testes → Veredicto"
 
-5. **CTA (9:00-9:30)** — Inscrição, newsletter AI Pulse, comentários. Natural, não forçado.
+#### Extras Gerados
 
-6. **ENCERRAMENTO (9:30-10:00)** — Despedida pessoal, prévia do próximo vídeo.
+O roteirizador tambem gera:
 
-### Extras solicitados
-
-- 3 opções de título (A/B test, SEO-friendly)
-- 3 sugestões de thumbnail (descrição visual + texto overlay)
+- 3 opcoes de titulo (A/B test, SEO-friendly)
+- 3 sugestoes de thumbnail (descricao visual + texto overlay)
 - 10-15 tags para YouTube
-- Descrição completa com timestamps
+- Descricao completa com timestamps
 
-### Parâmetros de IA
+### Parametros de IA
 
-| Parâmetro | Valor | Razão |
+| Parametro | Valor | Razao |
 |-----------|-------|-------|
-| model | `gpt-4o` | Qualidade máxima para texto longo |
-| temperature | `0.75` | Criativo mas estruturado |
+| model | `gpt-4o` | Qualidade maxima para texto longo |
+| temperature | `0.75` | Criativo mas estruturado — aumente para roteiros mais ousados |
 | max_tokens | `10000` | Roteiro completo + todos os extras |
 | response_format | `json_object` | JSON garantido |
 
 ---
 
-## Como Ajustar os Prompts
+## Referencia Rapida de Ajustes
 
-### Mudar a filosofia do canal
+| O que mudar | Onde editar | Bloco |
+|-------------|-------------|-------|
+| Identidade do canal | `systemPrompt` de `Preparar Prompt: YouTube` | Bloco 1-3 |
+| Pilares de conteudo | `systemPrompt` de `Preparar Prompt: YouTube` | Bloco 4 |
+| Tom dos titulos | `userPrompt` de `Preparar Prompt: YouTube` | Regras de voz |
+| Canais de referencia | `systemPrompt` de `Preparar Prompt: YouTube` | Bloco 5 |
+| Publico-alvo | `systemPrompt` de `Preparar Prompt: YouTube` | Bloco 6 |
+| Proporcao entre temas | `userPrompt` de `Preparar Prompt: YouTube` | Distribuicao |
+| Estilo de roteiro | `systemPrompt` de `Preparar Prompt: Roteiro` | Bloco 2-3 |
+| Secoes do roteiro | `userPrompt` de `Preparar Prompt: Roteiro` | Estrutura |
+| Marcacoes de producao | `systemPrompt` de `Preparar Prompt: Roteiro` | Bloco 3 |
 
-Edite o `systemPrompt` no node `Preparar Prompt: YouTube`. As seções relevantes são:
-- `FILOSOFIA CENTRAL DO CANAL`
-- `POSICIONAMENTO CENTRAL DE ISIS`
-- `PILARES DE CONTEÚDO`
-
-### Mudar o estilo das ideias
-
-Edite o `userPrompt` no node `Preparar Prompt: YouTube`:
-- `REGRA DE VOZ` — exemplos do que evitar/buscar
-- `DISTRIBUIÇÃO DAS 5 IDEIAS` — proporção entre pilares
-- `CRITÉRIOS PARA CADA IDEIA` — o que cada ideia precisa ter
-
-### Mudar a estrutura do roteiro
-
-Edite o `userPrompt` no node `Preparar Prompt: Roteiro`:
-- `ESTRUTURA OBRIGATÓRIA` — seções e durações
-- Adicione ou remova seções conforme o formato evolui
-
-### Mudar os canais de referência
-
-No `systemPrompt` do `Preparar Prompt: YouTube`, atualize a seção `CANAIS DE REFERÊNCIA`. Cada canal deve ter uma descrição do que ele inspira (formato, tom, estilo).
-
-### Dicas gerais
+## Dicas de Ajuste
 
 - Sempre teste com "Execute Node" no N8N antes de salvar
-- Se o GPT retornar JSON inválido, reduza `temperature` para 0.7
-- Se as ideias estiverem genéricas, aumente `temperature` para 0.9
+- Se o GPT retornar JSON invalido, reduza `temperature` para 0.7
+- Se as ideias estiverem genericas, aumente `temperature` para 0.9
 - Se o roteiro estiver curto, aumente `max_tokens`
-- Para testar rápido e barato, mude o `model` para `gpt-4o-mini`
+- Para testar rapido e barato, mude o `model` para `gpt-4o-mini`
+- Ao mudar campos do JSON de saida, atualize tambem os nodes `Separar Ideias` e `Notion: Salvar Ideia YouTube`
